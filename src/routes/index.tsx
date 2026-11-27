@@ -130,6 +130,7 @@ function Index() {
   const settleAll = async () => {
     if (bulkBusy || busyBill) return;
     setBulkBusy(true);
+    try {
     if (allPaid) {
       for (const bill of bills) {
         const transaction = paidByCategory.get(bill.category);
@@ -151,7 +152,9 @@ function Index() {
         );
       }
     }
-    setBulkBusy(false);
+    } finally {
+      setBulkBusy(false);
+    }
   };
 
   return (
