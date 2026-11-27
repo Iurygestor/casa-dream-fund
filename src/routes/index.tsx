@@ -49,7 +49,7 @@ export const Route = createFileRoute("/")({
 
 type Bill = { category: (typeof categories)[number]; amount: number };
 type BillFilter = "all" | "pending" | "paid";
-const paymentDescription = (category: string) => "Baixa de conta: " + category;
+const paymentDescription = (category: string, month: string) => "Baixa de conta: " + category + " | " + month;
 
 function Index() {
   const p = usePlan(),
@@ -83,8 +83,8 @@ function Index() {
   const paymentTransactions = p.transactions.filter(
     (transaction) =>
       transaction.type === "despesa" &&
-      transaction.date.startsWith(month) &&
-      transaction.description.startsWith("Baixa de conta: "),
+      transaction.description.startsWith("Baixa de conta: ") &&
+      transaction.description.endsWith(" | " + month),
   );
   const paidByCategory = new Map(
     paymentTransactions.map((transaction) => [transaction.category ?? "", transaction]),
@@ -123,7 +123,7 @@ function Index() {
           type: "despesa",
           amount: bill.amount,
           category: bill.category,
-          description: paymentDescription(bill.category),
+          description: paymentDescription(bill.category, month),
         },
         false,
       );
