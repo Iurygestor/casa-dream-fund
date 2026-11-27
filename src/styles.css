@@ -1874,4 +1874,10 @@ h1 {
   .recharts-cartesian-axis-tick-value {
     white-space: nowrap;
   }
+  #lovable-badge,
+  .lovable-badge,
+  [data-lovable-badge],
+  a[href*="lovable.dev"] {
+    display: none !important;
+}
 }
