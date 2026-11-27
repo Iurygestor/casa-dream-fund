@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AjustesRouteImport } from './routes/ajustes'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as LancarRouteImport } from './routes/lancar'
+import { Route as FaturasRouteImport } from './routes/faturas'
 import { Route as ProjecaoRouteImport } from './routes/projecao'
 import { Route as ReservaRouteImport } from './routes/reserva'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
@@ -37,6 +38,11 @@ const LancarRoute = LancarRouteImport.update({
   path: '/lancar',
   getParentRoute: () => rootRouteImport,
 } as any)
+const FaturasRoute = FaturasRouteImport.update({
+  id: '/faturas',
+  path: '/faturas',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ProjecaoRoute = ProjecaoRouteImport.update({
   id: '/projecao',
   path: '/projecao',
@@ -58,6 +64,7 @@ export interface FileRoutesByFullPath {
   '/ajustes': typeof AjustesRoute
   '/auth': typeof AuthRoute
   '/lancar': typeof LancarRoute
+  '/faturas': typeof FaturasRoute
   '/projecao': typeof ProjecaoRoute
   '/reserva': typeof ReservaRoute
   '/reset-password': typeof ResetPasswordRoute
@@ -88,6 +95,7 @@ export interface FileRouteTypes {
     | '/ajustes'
     | '/auth'
     | '/lancar'
+    | '/faturas'
     | '/projecao'
     | '/reserva'
     | '/reset-password'
@@ -116,6 +124,7 @@ export interface RootRouteChildren {
   AjustesRoute: typeof AjustesRoute
   AuthRoute: typeof AuthRoute
   LancarRoute: typeof LancarRoute
+  FaturasRoute: typeof FaturasRoute
   ProjecaoRoute: typeof ProjecaoRoute
   ReservaRoute: typeof ReservaRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
@@ -151,6 +160,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LancarRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/faturas': {
+      id: '/faturas'
+      path: '/faturas'
+      fullPath: '/faturas'
+      preLoaderRoute: typeof FaturasRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/projecao': {
       id: '/projecao'
       path: '/projecao'
@@ -180,6 +196,7 @@ const rootRouteChildren: RootRouteChildren = {
   AjustesRoute: AjustesRoute,
   AuthRoute: AuthRoute,
   LancarRoute: LancarRoute,
+  FaturasRoute: FaturasRoute,
   ProjecaoRoute: ProjecaoRoute,
   ReservaRoute: ReservaRoute,
   ResetPasswordRoute: ResetPasswordRoute,
