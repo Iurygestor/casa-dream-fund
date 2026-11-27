@@ -306,6 +306,39 @@ function SettingsForm() {
                 onChange={(e) => void importFile(e.target.files?.[0])}
               />
             </div>
+            <div className="mt-4 border-t pt-4">
+              <h3 className="font-semibold">Planilha CSV — Plano Casa</h3>
+              <p className="subtle-note">Preencha o modelo no Excel ou Google Planilhas. A importação valida os dados e mantém os lançamentos existentes.</p>
+              {csvPreview && csvPreview.errors.length > 0 && (
+                <div className="mt-3 rounded-lg border border-destructive/40 p-3" role="alert">
+                  <strong className="text-sm">A planilha contém {csvPreview.errors.length} erro(s). Corrija e importe novamente.</strong>
+                  <ul className="mt-2 list-disc pl-5 text-sm">
+                    {csvPreview.errors.slice(0, 30).map((error) => <li key={error.line}>Linha {error.line}: {error.message}</li>)}
+                  </ul>
+                  {csvPreview.errors.length > 30 && <p className="subtle-note">Exibindo os primeiros 30 erros.</p>}
+                  <Button className="mt-3" variant="outline" size="sm" onClick={() => setCsvPreview(null)}>Fechar</Button>
+                </div>
+              )}
+              {csvPreview && csvPreview.errors.length === 0 && (
+                <p className="subtle-note mt-2">Prévia: {csvPreview.settings ? "1 configuração; " : ""}{csvPreview.transactions.length} lançamento(s); {csvPreview.budgets.length} orçamento(s) mensal(is).</p>
+              )}
+              <div className="settings-action">
+                <Download size={19} />
+                <div><strong>Baixar modelo CSV</strong><p>Modelo padrão para preencher.</p></div>
+                <Button variant="outline" size="sm" onClick={downloadCsvTemplate}>Baixar modelo</Button>
+              </div>
+              <div className="settings-action">
+                <Upload size={19} />
+                <div><strong>Importar planilha preenchida</strong><p>Validar antes de gravar.</p></div>
+                <Button variant="outline" size="sm" onClick={() => { if (!p.user) { p.setAuthOpen(true); return; } csvInput.current?.click(); }}>Importar CSV</Button>
+                <input ref={csvInput} type="file" accept=".csv,text/csv" className="hidden" onChange={(e) => void readCsv(e.target.files?.[0])} />
+              </div>
+              <div className="settings-action">
+                <Download size={19} />
+                <div><strong>Exportar todos os dados em CSV</strong><p>Configurações, lançamentos e orçamentos.</p></div>
+                <Button variant="outline" size="sm" onClick={exportCsv} disabled={p.loading}>Exportar CSV</Button>
+              </div>
+            </div>
             <div className="settings-action">
               <Trash2 size={19} className="danger-action" />
               <div>
@@ -367,6 +400,14 @@ function SettingsForm() {
         description="Seus lançamentos serão excluídos da nuvem em todos os aparelhos. Exporte um backup antes de continuar. Os ajustes e o perfil serão mantidos."
         label="Apagar lançamentos"
         onConfirm={p.clear}
+      />
+      <Confirm
+        open={csvPreview !== null && csvPreview.errors.length === 0}
+        onOpenChange={(v) => { if (!v && !csvBusy) setCsvPreview(null); }}
+        title="Confirmar importação da planilha?"
+        description={csvPreview ? `Encontrados: ${csvPreview.settings ? "1 configuração, " : ""}${csvPreview.transactions.length} lançamentos, ${csvPreview.budgets.length} orçamentos mensais. Os dados atuais serão mantidos; lançamentos idênticos serão ignorados e orçamentos do mesmo mês serão atualizados.` : ""}
+        label={csvBusy ? "Importando…" : "Importar dados"}
+        onConfirm={confirmCsvImport}
       />
       <Confirm
         open={backup !== null}
