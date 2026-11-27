@@ -103,7 +103,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "apple-touch-icon", href: "/icon-180.png" },
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
-      { rel: "stylesheet", href: "https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;450;500;550;600;650;700&display=swap" },
+      {
+        rel: "stylesheet",
+        href: "https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;450;500;550;600;650;700&display=swap",
+      },
     ],
   }),
   shellComponent: RootShell,
@@ -132,7 +135,9 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <PlanProvider>
-        <AppShell><Outlet /></AppShell>
+        <AppShell>
+          <Outlet />
+        </AppShell>
         <Toaster position="top-center" />
       </PlanProvider>
     </QueryClientProvider>
