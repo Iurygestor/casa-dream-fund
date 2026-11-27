@@ -219,8 +219,8 @@ function SettingsForm() {
             </h2>
             <div className="mt-4 border-t pt-4">
               <h3 className="font-semibold">Planilha CSV — Plano Casa</h3>
-              <p className="subtle-note">Preencha no Excel ou Google Planilhas. Adicione uma linha CONFIGURACAO, linhas LANCAMENTO e linhas ORCAMENTO conforme necessário. Use datas AAAA-MM-DD, meses AAAA-MM, valores em reais e despesas planejadas no formato Categoria=Valor. A importação valida e preserva os lançamentos existentes.</p>
-              <p className="subtle-note">Colunas: CONFIGURACAO preenche B–H e Q (nome); LANCAMENTO usa I=data, J=tipo, K=valor, L=categoria e M=descrição; ORCAMENTO usa N=mês, O=receita planejada e P=Categoria=Valor (uma linha por categoria). Tipos: despesa, recebimento, bonus, aporte ou retirada. Recebimentos futuros usam data futura; reserva usa aporte/retirada.</p>
+              <p className="subtle-note">Preencha no Excel ou Google Planilhas. Adicione uma linha CONFIGURACAO, linhas LANCAMENTO, ORCAMENTO e RECEITA_PLANEJADA conforme necessário. Use datas AAAA-MM-DD, meses AAAA-MM, valores em reais, despesas no formato Categoria=Valor e origens de receita com nome e valor. A soma das origens deve bater com a receita planejada mensal. Receitas planejadas não viram lançamentos realizados.</p>
+              <p className="subtle-note">Colunas: CONFIGURACAO preenche B–H e Q (nome); LANCAMENTO usa I=data, J=tipo, K=valor, L=categoria e M=descrição; ORCAMENTO usa N=mês, O=receita total e P=Categoria=Valor; RECEITA_PLANEJADA usa N=mês, R=origem e S=valor (uma linha por origem). Tipos de lançamento real: despesa, recebimento, bonus, aporte ou retirada. Reserva usa aporte/retirada.</p>
               {csvPreview && csvPreview.errors.length > 0 && (
                 <div className="mt-3 rounded-lg border border-destructive/40 p-3" role="alert">
                   <strong className="text-sm">A planilha contém {csvPreview.errors.length} erro(s). Corrija e importe novamente.</strong>
@@ -232,7 +232,7 @@ function SettingsForm() {
                 </div>
               )}
               {csvPreview && csvPreview.errors.length === 0 && (
-                <p className="subtle-note mt-2">Prévia: {csvPreview.settings ? "1 configuração; " : ""}{csvPreview.transactions.length} lançamento(s); {csvPreview.budgets.length} orçamento(s) mensal(is).</p>
+                <p className="subtle-note mt-2">Prévia: {csvPreview.settings ? "1 configuração; " : ""}{csvPreview.transactions.length} lançamento(s); {csvPreview.budgets.length} orçamento(s) mensal(is); {csvPreview.budgets.reduce((sum, budget) => sum + Object.keys(budget.planned_income_sources).length, 0)} origem(ns) de receita prevista.</p>
               )}
               <div className="settings-action">
                 <Download size={19} />
@@ -317,7 +317,7 @@ function SettingsForm() {
         open={csvPreview !== null && csvPreview.errors.length === 0}
         onOpenChange={(v) => { if (!v && !csvBusy) setCsvPreview(null); }}
         title="Confirmar importação da planilha?"
-        description={csvPreview ? `Encontrados: ${csvPreview.settings ? "1 configuração, " : ""}${csvPreview.transactions.length} lançamentos, ${csvPreview.budgets.length} orçamentos mensais. Os dados atuais serão mantidos; lançamentos idênticos serão ignorados e orçamentos do mesmo mês serão atualizados.` : ""}
+        description={csvPreview ? `Encontrados: ${csvPreview.settings ? "1 configuração, " : ""}${csvPreview.transactions.length} lançamentos, ${csvPreview.budgets.length} orçamentos mensais e ${csvPreview.budgets.reduce((sum, budget) => sum + Object.keys(budget.planned_income_sources).length, 0)} origens de receita. Os dados atuais serão mantidos; lançamentos idênticos serão ignorados e orçamentos do mesmo mês serão atualizados.` : ""}
         label={csvBusy ? "Importando…" : "Importar dados"}
         onConfirm={confirmCsvImport}
       />
