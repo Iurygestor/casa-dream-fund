@@ -291,6 +291,12 @@ function Index() {
               <span>Receita prevista</span>
               <strong>{money(plan.income)}</strong>
             </div>
+            {Object.entries(monthlyPlan?.planned_income_sources ?? {}).map(([origin, amount]) => (
+              <div className="budget-line" key={origin}>
+                <span>{origin}</span>
+                <strong>{money(amount)}</strong>
+              </div>
+            ))}
             <div className="budget-line">
               <span>Despesas previstas</span>
               <strong>− {money(plan.expenses)}</strong>
