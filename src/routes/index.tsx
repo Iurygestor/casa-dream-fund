@@ -64,6 +64,7 @@ function Index() {
   const [bulkBusy, setBulkBusy] = useState(false);
   const [busyReceivable, setBusyReceivable] = useState<string | null>(null);
   const [deletingPayment, setDeletingPayment] = useState<string | null>(null);
+  const [deletingBill, setDeletingBill] = useState<string | null>(null);
   const monthlyPlan = p.budgets.find((item) => item.month === month);
   const plannedIncome = monthlyPlan?.planned_income ?? 0;
   const plannedCategories = Object.entries(monthlyPlan?.planned_expenses ?? {})
@@ -310,20 +311,18 @@ function Index() {
                       <span className={`bill-status ${paid ? "paid" : "pending"}`}>{paid ? "Pago" : "A pagar"}</span>
                       <strong className="bill-amount">{money(bill.amount)}</strong>
                     </button>
-                    {paid && transaction && (
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="bill-delete-button"
-                        title="Excluir despesa"
-                        aria-label={`Excluir despesa ${bill.category}`}
-                        onClick={() => setDeletingPayment(transaction.id)}
-                        disabled={isBusy}
-                      >
-                        <Trash2 size={15} />
-                      </Button>
-                    )}
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="bill-delete-button"
+                      title="Excluir despesa do orçamento"
+                      aria-label={`Excluir ${bill.category} do orçamento`}
+                      onClick={() => setDeletingBill(bill.category)}
+                      disabled={isBusy}
+                    >
+                      <Trash2 size={16} />
+                    </Button>
                   </div>
                 );
               })}
@@ -427,6 +426,21 @@ function Index() {
         ) : (
           <div className="panel no-payments-empty">Ainda sem saídas. Toque em uma conta acima para dar baixa.</div>
         )}
+        <Confirm
+          open={!!deletingBill}
+          onOpenChange={(open) => { if (!open) setDeletingBill(null); }}
+          title="Excluir despesa do mês?"
+          description={deletingBill ? `A categoria “${deletingBill}” será removida do orçamento de ${monthName(month)}. ${paidByCategory.has(deletingBill) ? "O lançamento que marcou esta conta como paga também será excluído." : ""} Esta ação não pode ser desfeita.` : "Esta ação não pode ser desfeita."}
+          label="Excluir despesa"
+          onConfirm={async () => {
+            if (deletingBill) {
+              const payment = paidByCategory.get(deletingBill);
+              if (payment) await p.remove(payment.id);
+              await p.removeBudgetCategory(month, deletingBill);
+            }
+            setDeletingBill(null);
+          }}
+        />
         <Confirm
           open={!!deletingPayment}
           onOpenChange={(open) => { if (!open) setDeletingPayment(null); }}
