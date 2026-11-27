@@ -74,7 +74,8 @@ export function parseCsvImport(source: string): CsvImportData {
   const headers = rows[0].map((h) => h.trim().toLowerCase());
   if (headers.join("|") !== csvHeaders.join("|")) throw new Error("Cabeçalho incompatível. Baixe o modelo CSV atualizado do Plano Casa.");
   const errors: CsvImportData["errors"] = [];
-  let settings: Settings | undefined;\n  let displayName: string | undefined;
+  let settings: Settings | undefined;
+  let displayName: string | undefined;
   const transactions: CsvImportData["transactions"] = [];
   const budgets = new Map<string, CsvBudget>();
   rows.slice(1).forEach((values, index) => {
@@ -91,7 +92,8 @@ export function parseCsvImport(source: string): CsvImportData {
           goal: decimal(row.meta_casa, true),
         });
         if (!parsed.success) throw new Error("Configuração inválida: " + parsed.error.issues.map((issue) => issue.message).join(", "));
-        settings = parsed.data;\n        displayName = row.nome_exibicao || undefined;
+        settings = parsed.data;
+        displayName = row.nome_exibicao || undefined;
       } else if (row.tipo_registro === "LANCAMENTO") {
         const parsed = transactionSchema.safeParse({
           date: row.data, type: row.tipo, amount: decimal(row.valor),
