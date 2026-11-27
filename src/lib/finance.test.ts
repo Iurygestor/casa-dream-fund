@@ -10,7 +10,15 @@ import {
   transactionSchema,
 } from "./finance";
 import type { Transaction } from "./finance";
-const s = defaults("2026-12-01");
+const s = {
+  initial_balance: 9808.96,
+  initial_date: "2026-12-01",
+  daily_rate: 0.0568,
+  monthly_deposit: 800,
+  deposit_start: "2027-01",
+  fgts: 6565.52,
+  goal: null,
+};
 const row = (type: Transaction["type"], amount: number, date = "2026-12-01"): Transaction => ({
   id: "00000000-0000-4000-8000-000000000001",
   date,
@@ -20,34 +28,21 @@ const row = (type: Transaction["type"], amount: number, date = "2026-12-01"): Tr
   description: "",
 });
 describe("Regras do Plano Casa", () => {
-  it("usa saldo inicial de 9808,96", () => expect(s.initial_balance).toBe(9808.96));
-  it("usa rendimento diário de 0,0568%", () => expect(s.daily_rate).toBe(0.0568));
-  it("usa depósito de 800 desde janeiro de 2027", () => {
-    expect(s.monthly_deposit).toBe(800);
-    expect(s.deposit_start).toBe("2027-01");
+  it("novas contas começam com parâmetros financeiros neutros", () => {
+    const fresh = defaults("2026-12-01");
+    expect(fresh.initial_balance).toBe(0);
+    expect(fresh.daily_rate).toBe(0);
+    expect(fresh.monthly_deposit).toBe(0);
+    expect(fresh.deposit_start).toBe("2026-12");
+    expect(fresh.fgts).toBe(0);
+    expect(fresh.goal).toBeNull();
   });
-  it("mantém FGTS de 6565,52 separado e meta vazia", () => {
-    expect(s.fgts).toBe(6565.52);
-    expect(s.goal).toBeNull();
-  });
-  it("dezembro tem resultado -16,01 e nenhum depósito", () => {
-    const b = budget("2026-12", s);
-    expect(b.income).toBe(3412.4);
-    expect(b.expenses).toBe(3428.41);
-    expect(b.remaining).toBeCloseTo(-16.01, 2);
-    expect(b.deposit).toBe(0);
-  });
-  it.each([
-    ["2027-01", 2714.21],
-    ["2027-02", 2496.79],
-    ["2027-03", 2496.79],
-    ["2027-04", 2324.04],
-    ["2027-05", 2205.92],
-    ["2028-12", 2205.92],
-  ])("respeita despesas previstas %s", (m, v) => {
-    expect(budget(m, s).expenses).toBe(v);
-    expect(budget(m, s).income).toBe(4000);
-    expect(budget(m, s).remaining).toBeCloseTo(4000 - v - 800);
+  it("calcula o orçamento usando somente valores recebidos do usuário", () => {
+    const b = budget("2027-01", s, 4000, 2714.21);
+    expect(b.income).toBe(4000);
+    expect(b.expenses).toBe(2714.21);
+    expect(b.remaining).toBeCloseTo(485.79);
+    expect(b.deposit).toBe(800);
   });
   it("retirada não diminui sobra e bônus conta como receita", () => {
     const t = monthlyTotals(
@@ -92,7 +87,7 @@ describe("Regras do Plano Casa", () => {
       9808.96 * Math.pow(1.000568, 30) + 800,
     ));
   it("inclui os dias restantes de novembro antes do primeiro ponto de dezembro", () => {
-    const p = projection(defaults("2026-11-27"), [], 800, "2026-11-27");
+    const p = projection({ ...s, initial_date: "2026-11-27" }, [], 800, "2026-11-27");
     expect(p.points[0]?.future).toBeCloseTo(9808.96 * Math.pow(1.000568, 34));
   });
   it("FGTS não muda a linha da reserva", () =>
