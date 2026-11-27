@@ -24,9 +24,19 @@ type MonthlyBudget = {
   planned_expenses: Record<string, number>;
   planned_income_sources: Record<string, number>;
 };
+export type CreditCard = {
+  id: string;
+  name: string;
+  institution: string;
+  last_four_digits: string | null;
+  credit_limit: number;
+  closing_day: number;
+  due_day: number;
+};
 type PlanContext = {
   user: User | null;
   budgets: MonthlyBudget[];
+  creditCards: CreditCard[];
   authLoading: boolean;
   settings: Settings;
   transactions: Transaction[];
@@ -36,7 +46,11 @@ type PlanContext = {
   authOpen: boolean;
   setAuthOpen: (open: boolean) => void;
   refetch: () => void;
-  add: (t: Omit<Transaction, "id">, bonus: boolean) => Promise<boolean>;
+  add: (
+    t: Omit<Transaction, "id">,
+    bonus: boolean,
+    payment?: { method: "credit_card"; cardId: string; installments: number },
+  ) => Promise<boolean>;
   remove: (id: string) => Promise<void>;
   clear: () => Promise<void>;
   saveSettings: (s: Settings, name: string) => Promise<boolean>;
@@ -45,6 +59,17 @@ type PlanContext = {
   signOut: () => Promise<void>;
 };
 const Context = createContext<PlanContext | null>(null);
+function creditCardIsValid(
+  payment: { method: "credit_card"; cardId: string; installments: number },
+  cards: CreditCard[],
+) {
+  return (
+    cards.some((card) => card.id === payment.cardId) &&
+    Number.isInteger(payment.installments) &&
+    payment.installments >= 1 &&
+    payment.installments <= 48
+  );
+}
 export function usePlan() {
   const context = useContext(Context);
   if (!context) throw new Error("Plano indisponível");
@@ -102,6 +127,11 @@ export function PlanProvider({ children }: { children: ReactNode }) {
       if (settingsResult.error) throw settingsResult.error;
       if (profileResult.error) throw profileResult.error;
       if (budgetsResult.error) throw budgetsResult.error;
+      if (cardsResult.error) throw cardsResult.error;
+      const creditCards: CreditCard[] = (cardsResult.data ?? []).map((card: any) => ({
+        ...card,
+        credit_limit: Number(card.credit_limit),
+      }));
       const budgets: MonthlyBudget[] = (budgetsResult.data ?? []).map((row: any) => ({
         month: row.month,
         planned_income: Number(row.planned_income),
@@ -133,6 +163,7 @@ export function PlanProvider({ children }: { children: ReactNode }) {
         settings: settingsResult.data ? settingsSchema.parse(settingsResult.data) : defaults(),
         transactions,
         budgets,
+        creditCards,
         displayName: profileResult.data.display_name,
       };
     },
@@ -148,20 +179,54 @@ export function PlanProvider({ children }: { children: ReactNode }) {
   const invalidate = async () => {
     await client.invalidateQueries({ queryKey: ["house-plan"] });
   };
-  const add = async (t: Omit<Transaction, "id">, bonus: boolean) => {
+  const add = async (
+    t: Omit<Transaction, "id">,
+    bonus: boolean,
+    payment?: { method: "credit_card"; cardId: string; installments: number },
+  ) => {
     const account = requireUser();
     if (!account) return false;
+    let insertedId: string | null = null;
     try {
-      const entries = bonusEntries(transactionSchema.parse(t), bonus).map(
-        ({ id: _id, ...entry }) => ({ ...entry, user_id: account.id }),
+      const parsed = transactionSchema.parse(t);
+      if (payment && (parsed.type !== "despesa" || !creditCardIsValid(payment, query.data?.creditCards ?? []))) {
+        throw new Error("Cartão ou forma de pagamento inválida.");
+      }
+      const entries = (payment ? [parsed] : bonusEntries(parsed, bonus)).map(
+        ({ id: _id, ...entry }) => ({
+          ...entry,
+          user_id: account.id,
+          ...(payment
+            ? {
+                payment_method: "credit_card",
+                credit_card_id: payment.cardId,
+                installments_total: payment.installments,
+              }
+            : {}),
+        }),
       );
-      const { error } = await supabase.from("transactions").insert(entries);
+      const { data, error } = await (supabase.from("transactions") as any)
+        .insert(entries)
+        .select("id");
       if (error) throw error;
+      if (payment) {
+        insertedId = data?.[0]?.id ?? null;
+        if (!insertedId) throw new Error("Não foi possível identificar o lançamento salvo.");
+        const { error: installmentError } = await (supabase.rpc as any)(
+          "generate_credit_card_installments",
+          { p_transaction_id: insertedId },
+        );
+        if (installmentError) throw installmentError;
+      }
       await invalidate();
-      toast.success("Lançamento salvo na nuvem");
+      toast.success(payment ? "Compra no cartão salva e parcelada na fatura" : "Lançamento salvo na nuvem");
       return true;
-    } catch {
-      toast.error("Não foi possível salvar. Tente novamente.");
+    } catch (error) {
+      if (insertedId) {
+        await supabase.from("transactions").delete().eq("user_id", account.id).eq("id", insertedId);
+      }
+      console.error("Erro ao salvar lançamento:", error);
+      toast.error(error instanceof Error ? error.message : "Não foi possível salvar. Tente novamente.");
       return false;
     }
   };
@@ -280,6 +345,7 @@ export function PlanProvider({ children }: { children: ReactNode }) {
         settings: query.data?.settings ?? defaults(),
         transactions: query.data?.transactions ?? [],
         budgets: query.data?.budgets ?? [],
+        creditCards: query.data?.creditCards ?? [],
         displayName: query.data?.displayName ?? "",
         loading: !!user && query.isPending,
         error: !!user && query.isError,
