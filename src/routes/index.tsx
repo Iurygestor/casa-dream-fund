@@ -31,6 +31,7 @@ import {
   dateValue,
   isoDate,
   categories,
+  RECEIVABLE_PREFIX,
 } from "@/lib/finance";
 import { pageHead } from "@/lib/metadata";
 
@@ -59,6 +60,7 @@ function Index() {
   const [billFilter, setBillFilter] = useState<BillFilter>("all");
   const [busyBill, setBusyBill] = useState<string | null>(null);
   const [bulkBusy, setBulkBusy] = useState(false);
+  const [busyReceivable, setBusyReceivable] = useState<string | null>(null);
   const monthlyPlan = p.budgets.find((item) => item.month === month);
   const plannedIncome = monthlyPlan?.planned_income ?? 0;
   const plannedCategories = Object.entries(monthlyPlan?.planned_expenses ?? {})
@@ -76,6 +78,13 @@ function Index() {
     bills.push({ category: "Fatura C6", amount: invoiceTotal, dueDate: monthInvoices.map((invoice) => invoice.due_date).sort()[0] });
   }
   bills.sort((a, b) => b.amount - a.amount);
+  const receivables = p.transactions.filter(
+    (transaction) =>
+      transaction.type === "recebimento" &&
+      transaction.description.startsWith(RECEIVABLE_PREFIX) &&
+      transaction.date.startsWith(month),
+  );
+  const receivableTotal = receivables.reduce((sum, transaction) => sum + transaction.amount, 0);
   const paymentTransactions = p.transactions.filter(
     (transaction) =>
       transaction.type === "despesa" &&
@@ -104,6 +113,26 @@ function Index() {
   const balance = reserveBalance(p.settings, p.transactions) ?? p.settings.initial_balance;
   const cats = plannedCategories;
   const catsTotal = cats.reduce((sum, item) => sum + item.amount, 0);
+
+  const markReceivableReceived = async (transaction: (typeof receivables)[number]) => {
+    if (busyReceivable) return;
+    setBusyReceivable(transaction.id);
+    try {
+      const saved = await p.add(
+        {
+          date: isoDate(),
+          type: "recebimento",
+          amount: transaction.amount,
+          category: null,
+          description: transaction.description.slice(RECEIVABLE_PREFIX.length).trim() || "Conta recebida",
+        },
+        false,
+      );
+      if (saved) await p.remove(transaction.id);
+    } finally {
+      setBusyReceivable(null);
+    }
+  };
 
   const toggleBill = async (bill: Bill) => {
     if (busyBill || bulkBusy) return;
@@ -286,6 +315,33 @@ function Index() {
               {billFilter === "paid" ? "Nenhuma conta paga por enquanto." : billFilter === "pending" ? "Todas as contas estão pagas." : "Nenhuma despesa prevista cadastrada para este mês."}
             </div>
           )}
+          <div className="receivables-block">
+            <div className="receivables-heading">
+              <div><strong>Contas a receber</strong><span>{receivables.length} pendente{receivables.length === 1 ? "" : "s"}</span></div>
+              <strong className="receivable-total">{money(receivableTotal)}</strong>
+            </div>
+            {receivables.length ? (
+              <div className="bill-list receivable-list">
+                {receivables.map((transaction) => (
+                  <div className="bill-row receivable-row" key={transaction.id}>
+                    <span className="bill-check receivable-check"><ArrowUpRight size={17} /></span>
+                    <span className="bill-main">
+                      <strong>{transaction.description.slice(RECEIVABLE_PREFIX.length).trim() || "Valor a receber"}</strong>
+                      <span>Previsto para {dateValue(transaction.date).toLocaleDateString("pt-BR")}</span>
+                    </span>
+                    <span className="bill-status receivable-status">A receber</span>
+                    <strong className="bill-amount">{money(transaction.amount)}</strong>
+                    <Button size="sm" variant="outline" disabled={busyReceivable === transaction.id} onClick={() => void markReceivableReceived(transaction)}>
+                      {busyReceivable === transaction.id ? "Salvando…" : "Recebi"}
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="receivable-empty">Nenhuma conta a receber cadastrada para este mês.</div>
+            )}
+            <div className="receivable-footer"><span>Entradas pendentes não entram no saldo até serem recebidas.</span><Link to="/lancar" search={{ type: "recebimento" }}>Adicionar a receber <ArrowUpRight size={13} /></Link></div>
+          </div>
           {bills.length > 0 && (
             <div className="bill-actions">
               <Button variant={allPaid ? "outline" : "default"} onClick={() => void settleAll()} disabled={bulkBusy || !!busyBill}>
