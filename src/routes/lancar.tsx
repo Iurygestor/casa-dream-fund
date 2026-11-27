@@ -43,6 +43,9 @@ function LaunchForm({ initialType }: { initialType: TransactionType }) {
     [date, setDate] = useState(isoDate()),
     [category, setCategory] = useState<(typeof categories)[number]>("Aluguel"),
     [description, setDescription] = useState(""),
+    [paymentMethod, setPaymentMethod] = useState<"none" | "credit_card">("none"),
+    [creditCardId, setCreditCardId] = useState(p.creditCards[0]?.id ?? ""),
+    [installments, setInstallments] = useState("1"),
     [depositBonus, setDepositBonus] = useState(false),
     [busy, setBusy] = useState(false);
   async function submit(e: React.FormEvent) {
@@ -58,8 +61,23 @@ function LaunchForm({ initialType }: { initialType: TransactionType }) {
       toast.error("Informe uma data válida e um valor maior que zero.");
       return;
     }
+    if (paymentMethod === "credit_card" && (!creditCardId || !p.creditCards.some((card) => card.id === creditCardId))) {
+      toast.error("Selecione um cartão de crédito válido.");
+      return;
+    }
+    const installmentCount = Number(installments);
+    if (paymentMethod === "credit_card" && (!Number.isInteger(installmentCount) || installmentCount < 1 || installmentCount > 48)) {
+      toast.error("Informe entre 1 e 48 parcelas.");
+      return;
+    }
     setBusy(true);
-    const saved = await p.add(result.data, depositBonus);
+    const saved = await p.add(
+      result.data,
+      depositBonus,
+      paymentMethod === "credit_card"
+        ? { method: "credit_card", cardId: creditCardId, installments: installmentCount }
+        : undefined,
+    );
     setBusy(false);
     if (saved) await navigate({ to: "/", search: { month: date.slice(0, 7) } });
   }
@@ -130,6 +148,47 @@ function LaunchForm({ initialType }: { initialType: TransactionType }) {
                   ))}
                 </select>
               </label>
+            )}
+            {type === "despesa" && (
+              <div className="form-stack">
+                <label>
+                  Forma de pagamento
+                  <select
+                    value={paymentMethod}
+                    onChange={(e) => setPaymentMethod(e.target.value as "none" | "credit_card")}
+                  >
+                    <option value="none">Não informado</option>
+                    {p.creditCards.length > 0 && <option value="credit_card">Cartão de crédito</option>}
+                  </select>
+                </label>
+                {paymentMethod === "credit_card" && (
+                  <>
+                    <label>
+                      Cartão
+                      <select value={creditCardId} onChange={(e) => setCreditCardId(e.target.value)} required>
+                        {p.creditCards.map((card) => (
+                          <option key={card.id} value={card.id}>
+                            {card.name} {card.last_four_digits ? "•••• " + card.last_four_digits : ""}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <label>
+                      Número de parcelas
+                      <select value={installments} onChange={(e) => setInstallments(e.target.value)}>
+                        {Array.from({ length: 48 }, (_, i) => i + 1).map((count) => (
+                          <option key={count} value={count}>
+                            {count}x {count === 1 ? "à vista" : ""}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <p className="subtle-note">
+                      O sistema distribuirá o valor nas faturas mensais do cartão automaticamente.
+                    </p>
+                  </>
+                )}
+              </div>
             )}
             <label>
               Descrição <span className="text-muted-foreground font-normal">opcional</span>
