@@ -74,6 +74,7 @@ export interface FileRoutesByTo {
   '/ajustes': typeof AjustesRoute
   '/auth': typeof AuthRoute
   '/lancar': typeof LancarRoute
+  '/faturas': typeof FaturasRoute
   '/projecao': typeof ProjecaoRoute
   '/reserva': typeof ReservaRoute
   '/reset-password': typeof ResetPasswordRoute
@@ -84,6 +85,7 @@ export interface FileRoutesById {
   '/ajustes': typeof AjustesRoute
   '/auth': typeof AuthRoute
   '/lancar': typeof LancarRoute
+  '/faturas': typeof FaturasRoute
   '/projecao': typeof ProjecaoRoute
   '/reserva': typeof ReservaRoute
   '/reset-password': typeof ResetPasswordRoute
@@ -105,6 +107,7 @@ export interface FileRouteTypes {
     | '/ajustes'
     | '/auth'
     | '/lancar'
+    | '/faturas'
     | '/projecao'
     | '/reserva'
     | '/reset-password'
@@ -114,6 +117,7 @@ export interface FileRouteTypes {
     | '/ajustes'
     | '/auth'
     | '/lancar'
+    | '/faturas'
     | '/projecao'
     | '/reserva'
     | '/reset-password'
