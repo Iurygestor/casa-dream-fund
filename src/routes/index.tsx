@@ -293,23 +293,38 @@ function Index() {
                 const paid = !!transaction && transaction.amount === bill.amount;
                 const isBusy = busyBill === bill.category || bulkBusy;
                 return (
-                  <button
-                    type="button"
-                    className={`bill-row ${paid ? "is-paid" : ""}`}
-                    key={bill.category}
-                    onClick={() => void toggleBill(bill)}
-                    disabled={isBusy}
-                    aria-pressed={paid}
-                    aria-label={`${paid ? "Desfazer baixa de" : "Dar baixa em"} ${bill.category}`}
-                  >
-                    <span className="bill-check">{isBusy ? <span className="bill-spinner" /> : paid ? <Check size={17} /> : <Circle size={21} />}</span>
-                    <span className="bill-main">
-                      <strong>{bill.category}</strong>
-                      <span>{paid && transaction ? `Pago em ${dateValue(transaction.date).toLocaleDateString("pt-BR")}` : bill.dueDate ? `Vencimento ${dateValue(bill.dueDate).toLocaleDateString("pt-BR")}` : "Vencimento não informado"}</span>
-                    </span>
-                    <span className={`bill-status ${paid ? "paid" : "pending"}`}>{paid ? "Pago" : "A pagar"}</span>
-                    <strong className="bill-amount">{money(bill.amount)}</strong>
-                  </button>
+                  <div className={`bill-row-with-delete ${paid ? "has-delete" : ""}`} key={bill.category}>
+                    <button
+                      type="button"
+                      className={`bill-row ${paid ? "is-paid" : ""}`}
+                      onClick={() => void toggleBill(bill)}
+                      disabled={isBusy}
+                      aria-pressed={paid}
+                      aria-label={`${paid ? "Desfazer baixa de" : "Dar baixa em"} ${bill.category}`}
+                    >
+                      <span className="bill-check">{isBusy ? <span className="bill-spinner" /> : paid ? <Check size={17} /> : <Circle size={21} />}</span>
+                      <span className="bill-main">
+                        <strong>{bill.category}</strong>
+                        <span>{paid && transaction ? `Pago em ${dateValue(transaction.date).toLocaleDateString("pt-BR")}` : bill.dueDate ? `Vencimento ${dateValue(bill.dueDate).toLocaleDateString("pt-BR")}` : "Vencimento não informado"}</span>
+                      </span>
+                      <span className={`bill-status ${paid ? "paid" : "pending"}`}>{paid ? "Pago" : "A pagar"}</span>
+                      <strong className="bill-amount">{money(bill.amount)}</strong>
+                    </button>
+                    {paid && transaction && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="bill-delete-button"
+                        title="Excluir despesa"
+                        aria-label={`Excluir despesa ${bill.category}`}
+                        onClick={() => setDeletingPayment(transaction.id)}
+                        disabled={isBusy}
+                      >
+                        <Trash2 size={15} />
+                      </Button>
+                    )}
+                  </div>
                 );
               })}
             </div>
