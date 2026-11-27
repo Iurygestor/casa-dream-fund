@@ -161,31 +161,6 @@ export function reserveBalance(s: Settings, rows: Transaction[], until = isoDate
   }
   return balance * Math.pow(1 + s.daily_rate / 100, dayDifference(cursor, until));
 }
-export const referenceCategories = (month: string) =>
-  month >= "2027-01"
-    ? [
-        ["Aluguel", 840],
-        ["Alimentação", 500],
-        [
-          "Fatura C6",
-          month === "2027-01"
-            ? 698.16
-            : ["2027-02", "2027-03"].includes(month)
-              ? 480.74
-              : month === "2027-04"
-                ? 307.99
-                : 189.87,
-        ],
-        ["Academia", 190],
-        ["Faculdade", 160],
-        ["Manutenção", 100],
-        ["Gasolina", 100],
-        ["DAS", 86.05],
-        ["Internet", 40],
-      ]
-        .map(([category, amount]) => ({ category: String(category), amount: Number(amount) }))
-        .sort((a, b) => b.amount - a.amount)
-    : [];
 export function projection(s: Settings, rows: Transaction[], simulated: number, today = isoDate()) {
   const currentMonth = today.slice(0, 7),
     realNow = reserveBalance(s, rows, today) ?? s.initial_balance;
