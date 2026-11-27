@@ -3366,3 +3366,43 @@ h1 {
   }
 }
 
+
+/* Lixeira das contas: alinhada à direita e com destaque vermelho */
+.bills-panel .bill-row-with-delete {
+  grid-template-columns: minmax(0, 1fr) 44px;
+  padding-right: 14px;
+}
+.bills-panel .bill-row-with-delete .bill-delete-button {
+  justify-self: end;
+  align-self: center;
+  width: 34px;
+  height: 34px;
+  min-width: 34px;
+  padding: 0;
+  color: oklch(0.56 0.22 27);
+  background: oklch(0.96 0.045 27);
+  border: 1px solid oklch(0.9 0.08 27);
+  border-radius: 10px;
+  transition: color 150ms ease, background 150ms ease, border-color 150ms ease;
+}
+.bills-panel .bill-row-with-delete .bill-delete-button:hover:not(:disabled) {
+  color: white;
+  background: oklch(0.56 0.22 27);
+  border-color: oklch(0.56 0.22 27);
+}
+.bills-panel .bill-row-with-delete .bill-delete-button:focus-visible {
+  outline: 2px solid oklch(0.56 0.22 27);
+  outline-offset: 2px;
+}
+@media (max-width: 700px) {
+  .bills-panel .bill-row-with-delete {
+    grid-template-columns: minmax(0, 1fr) 40px;
+    padding-right: 9px;
+  }
+  .bills-panel .bill-row-with-delete .bill-delete-button {
+    width: 32px;
+    height: 32px;
+    min-width: 32px;
+    border-radius: 9px;
+  }
+}
