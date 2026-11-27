@@ -71,7 +71,9 @@ export function createCsv(settings: Settings, transactions: Transaction[], budge
 export function parseCsvImport(source: string): CsvImportData {
   const rows = parseRows(source);
   if (rows.length < 2) throw new Error("Adicione ao menos um registro depois do cabeçalho.");
-  const headers = rows[0].map((h) => h.trim().toLowerCase());
+  const headerRow = rows[0];
+  if (!headerRow) throw new Error("Cabeçalho CSV ausente.");
+  const headers = headerRow.map((h) => h.trim().toLowerCase());
   if (headers.join("|") !== csvHeaders.join("|")) throw new Error("Cabeçalho incompatível. Baixe o modelo CSV atualizado do Plano Casa.");
   const errors: CsvImportData["errors"] = [];
   let settings: Settings | undefined;
@@ -123,5 +125,11 @@ export function parseCsvImport(source: string): CsvImportData {
       errors.push({ line, message: error instanceof Error ? error.message : "Dados inválidos." });
     }
   });
-  return { settings, displayName, transactions, budgets: [...budgets.values()], errors };
+  return {
+    ...(settings ? { settings } : {}),
+    ...(displayName !== undefined ? { displayName } : {}),
+    transactions,
+    budgets: [...budgets.values()],
+    errors,
+  };
 }
