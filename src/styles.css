@@ -2664,3 +2664,95 @@ h1 {
     font-size: 11px;
   }
 }
+
+
+/* Quick actions for common monthly entries */
+.quick-launch-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 13px;
+  margin: 0 0 22px;
+}
+.quick-launch-card {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  min-width: 0;
+  padding: 15px 17px;
+  border: 1px solid var(--border);
+  border-radius: 15px;
+  background: var(--card);
+  color: var(--foreground);
+  text-decoration: none;
+  transition: border-color 150ms ease, transform 150ms ease, background 150ms ease;
+}
+.quick-launch-card:hover {
+  border-color: var(--primary);
+  background: var(--muted);
+  transform: translateY(-1px);
+}
+.quick-launch-card:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 3px;
+}
+.quick-launch-icon {
+  width: 39px;
+  height: 39px;
+  flex: 0 0 39px;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+}
+.quick-launch-income .quick-launch-icon {
+  color: var(--income);
+  background: var(--income-soft);
+}
+.quick-launch-expense .quick-launch-icon {
+  color: var(--expense);
+  background: var(--expense-soft);
+}
+.quick-launch-card > span:nth-child(2) {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  flex-direction: column;
+  gap: 4px;
+}
+.quick-launch-card strong {
+  font-size: 13px;
+  font-weight: 650;
+}
+.quick-launch-card small {
+  color: var(--muted-foreground);
+  font-size: 10px;
+}
+.quick-launch-arrow {
+  flex: 0 0 auto;
+  color: var(--muted-foreground);
+}
+@media (max-width: 560px) {
+  .quick-launch-actions {
+    gap: 9px;
+    margin-bottom: 17px;
+  }
+  .quick-launch-card {
+    gap: 9px;
+    padding: 12px 10px;
+    border-radius: 12px;
+  }
+  .quick-launch-icon {
+    width: 32px;
+    height: 32px;
+    flex-basis: 32px;
+  }
+  .quick-launch-card strong {
+    font-size: 11px;
+  }
+  .quick-launch-card small {
+    font-size: 9px;
+    line-height: 1.35;
+  }
+  .quick-launch-arrow {
+    width: 14px;
+  }
+}
