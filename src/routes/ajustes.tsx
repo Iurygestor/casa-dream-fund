@@ -306,6 +306,7 @@ function SettingsForm() {
             <div className="mt-4 border-t pt-4">
               <h3 className="font-semibold">Planilha CSV — Plano Casa</h3>
               <p className="subtle-note">Preencha no Excel ou Google Planilhas. Adicione uma linha CONFIGURACAO, linhas LANCAMENTO e linhas ORCAMENTO conforme necessário. Use datas AAAA-MM-DD, meses AAAA-MM, valores em reais e despesas planejadas no formato Categoria=Valor. A importação valida e preserva os lançamentos existentes.</p>
+              <p className="subtle-note">Colunas: CONFIGURACAO preenche B–H e Q (nome); LANCAMENTO usa I=data, J=tipo, K=valor, L=categoria e M=descrição; ORCAMENTO usa N=mês, O=receita planejada e P=Categoria=Valor (uma linha por categoria). Tipos: despesa, recebimento, bonus, aporte ou retirada. Recebimentos futuros usam data futura; reserva usa aporte/retirada.</p>
               {csvPreview && csvPreview.errors.length > 0 && (
                 <div className="mt-3 rounded-lg border border-destructive/40 p-3" role="alert">
                   <strong className="text-sm">A planilha contém {csvPreview.errors.length} erro(s). Corrija e importe novamente.</strong>
