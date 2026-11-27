@@ -195,8 +195,9 @@ function Index() {
   return (
     <>
       <PageHeading
-        eyebrow={p.displayName ? `Olá, ${p.displayName.split(" ")[0]}` : "CADA PASSO CONTA"}
+        eyebrow={p.displayName ? `BEM-VINDO, ${p.displayName.trim().split(" ")[0].toUpperCase()}` : "BEM-VINDO AO GRANA"}
         title="Seu mês em perspectiva"
+        description="Cada escolha de hoje aproxima você dos seus objetivos. Continue no seu ritmo!"
         action={
           <div className="month-selector">
             <Button
