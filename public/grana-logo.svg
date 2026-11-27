@@ -1,21 +1,8 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="Grana">
-  <defs>
-    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#a3ff3f"/>
-      <stop offset="1" stop-color="#16c765"/>
-    </linearGradient>
-    <linearGradient id="gold" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#ffe16a"/>
-      <stop offset="1" stop-color="#f5a900"/>
-    </linearGradient>
-  </defs>
-  <rect x="4" y="4" width="120" height="120" rx="29" fill="#06251b"/>
-  <path d="M22 58 64 23l42 35v43H22z" fill="none" stroke="url(#g)" stroke-width="8" stroke-linejoin="round"/>
-  <path d="M46 101V76h36v25" fill="#0b3b29" stroke="url(#g)" stroke-width="5" stroke-linejoin="round"/>
-  <rect x="52" y="48" width="10" height="10" rx="2" fill="url(#gold)"/>
-  <rect x="67" y="48" width="10" height="10" rx="2" fill="url(#gold)"/>
-  <path d="M25 91c17 8 40 10 65 1 8-3 13-7 17-12" fill="none" stroke="url(#g)" stroke-width="6" stroke-linecap="round"/>
-  <path d="m99 78 10 2-2 11" fill="none" stroke="url(#g)" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
-  <circle cx="88" cy="89" r="13" fill="url(#gold)" stroke="#fff0a8" stroke-width="2"/>
-  <path d="M91 82c-2-2-7-2-8 2-1 4 9 4 8 8-1 4-7 4-10 1m5-14v19" fill="none" stroke="#17432b" stroke-width="2.5" stroke-linecap="round"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192">
+  <rect width="192" height="192" rx="42" fill="#184a3d"/>
+  <g fill="#f6f5e9">
+    <path d="M56 61c0-13 11-22 27-22h31c15 0 25 8 25 21 0 10-6 17-17 20l-30 8c-5 1-8 3-8 6 0 4 4 6 10 6h43v19H94c-18 0-29-9-29-23 0-11 7-19 20-22l30-8c4-1 6-3 6-6s-3-5-8-5H85c-6 0-9 2-9 6z"/>
+    <path d="M91 27h13v138H91z"/>
+  </g>
+  <path d="M31 143c33-25 78-31 128-49" fill="none" stroke="#9bbd91" stroke-width="7" stroke-linecap="round"/>
 </svg>
