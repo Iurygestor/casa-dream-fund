@@ -117,7 +117,7 @@ function SettingsForm() {
   }
   function exportCsv() {
     if (!p.user) { p.setAuthOpen(true); return; }
-    downloadCsv(createCsv(p.settings, p.transactions, p.budgets), `plano-casa-${isoDate()}.csv`);
+    downloadCsv(createCsv(p.settings, p.transactions, p.budgets, p.displayName), `plano-casa-${isoDate()}.csv`);
     toast.success("Planilha CSV exportada");
   }
   async function readCsv(file: File | undefined) {
