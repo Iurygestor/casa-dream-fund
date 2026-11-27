@@ -9,6 +9,7 @@ import {
   CreditCard,
   Settings2,
   ArrowUpRight,
+  ArrowLeft,
   ShieldCheck,
   Cloud,
   LogIn,
@@ -85,6 +86,16 @@ export function AppShell({ children }: { children: ReactNode }) {
         </div>
       </header>
       <main className="main-content">
+        {pathname !== "/" && (
+          <div className="page-back-wrap">
+            <Button variant="ghost" size="sm" asChild className="page-back-button">
+              <Link to="/">
+                <ArrowLeft size={17} />
+                Voltar ao início
+              </Link>
+            </Button>
+          </div>
+        )}
         {p.loading ? (
           <div className="status-banner">
             <span className="loading-dot" />
