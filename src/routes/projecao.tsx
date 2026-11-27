@@ -10,9 +10,10 @@ import {
   Tooltip,
   ReferenceLine,
 } from "recharts";
+import { Button } from "@/components/ui/button";
 import { usePlan } from "@/components/plan/provider";
 import { PageHeading, SectionHeading, CloudNotice } from "@/components/plan/shared";
-import { projection, parseDecimal, money, compactMoney, monthName } from "@/lib/finance";
+import { projection, parseDecimal, money, compactMoney, monthName, shiftMonth } from "@/lib/finance";
 import { pageHead } from "@/lib/metadata";
 export const Route = createFileRoute("/projecao")({
   head: () =>
@@ -28,7 +29,12 @@ function Projection() {
 }
 function ProjectionView() {
   const p = usePlan(),
-    [simulation, setSimulation] = useState(String(p.settings.monthly_deposit).replace(".", ","));
+    [simulation, setSimulation] = useState(String(p.settings.monthly_deposit).replace(".", ",")),
+    [budgetMonth, setBudgetMonth] = useState("2026-12"),
+    budget = p.budgets.find((item) => item.month === budgetMonth),
+    incomeSources = Object.entries(budget?.planned_income_sources ?? {}),
+    expenseItems = Object.entries(budget?.planned_expenses ?? {}).sort((a, b) => b[1] - a[1]),
+    budgetExpenses = expenseItems.reduce((sum, [, value]) => sum + value, 0);
   const amount = parseDecimal(simulation),
     valid = Number.isFinite(amount) && amount >= 0,
     result = useMemo(
@@ -197,6 +203,32 @@ function ProjectionView() {
           Informe um valor igual ou maior que zero.
         </p>
       )}
+      <section className="panel budget-panel projection-budget">
+        <div className="chart-title">
+          <h2>Receitas e despesas previstas</h2>
+          <div className="month-selector">
+            <Button variant="ghost" size="icon" aria-label="Mês anterior" onClick={() => setBudgetMonth((m) => shiftMonth(m, -1))}>‹</Button>
+            <span>{monthName(budgetMonth)}</span>
+            <Button variant="ghost" size="icon" aria-label="Próximo mês" onClick={() => setBudgetMonth((m) => shiftMonth(m, 1))}>›</Button>
+          </div>
+        </div>
+        {budget ? (
+          <>
+            <p className="budget-eyebrow">RECEITAS POR ORIGEM</p>
+            {incomeSources.length ? incomeSources.map(([origin, value]) => (
+              <div className="budget-line" key={origin}><span>{origin}</span><strong>{money(value)}</strong></div>
+            )) : <p className="subtle-note">Sem detalhamento de receitas para este mês.</p>}
+            <div className="budget-line total"><span>Total de receitas previstas</span><strong>{money(budget.planned_income)}</strong></div>
+            <p className="budget-eyebrow">DESPESAS POR CATEGORIA</p>
+            {expenseItems.map(([category, value]) => (
+              <div className="budget-line" key={category}><span>{category}</span><strong>− {money(value)}</strong></div>
+            ))}
+            <div className="budget-line total"><span>Total de despesas previstas</span><strong>− {money(budgetExpenses)}</strong></div>
+            <div className="budget-line"><span>Aporte mensal planejado</span><strong>− {money(p.settings.monthly_deposit)}</strong></div>
+            <div className="budget-line total"><span>Sobra estimada após despesas e aporte</span><strong>{money(budget.planned_income - budgetExpenses - (budgetMonth >= p.settings.deposit_start ? p.settings.monthly_deposit : 0))}</strong></div>
+          </>
+        ) : <p className="subtle-note">Nenhum orçamento cadastrado para {monthName(budgetMonth)}.</p>}
+      </section>
       <section className="panel table-scroll">
         <table className="data-table">
           <thead>
