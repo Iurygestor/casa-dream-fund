@@ -3,7 +3,7 @@ import { categories, monthSchema, settingsSchema, transactionSchema, type Settin
 export const csvHeaders = [
   "tipo_registro", "saldo_inicial", "data_saldo_inicial", "rendimento_diario",
   "aporte_mensal", "inicio_aportes", "fgts", "meta_casa", "data", "tipo",
-  "valor", "categoria", "descricao", "mes", "receita_planejada", "despesa_planejada",
+  "valor", "categoria", "descricao", "mes", "receita_planejada", "despesa_planejada", "nome_exibicao",
 ] as const;
 
 export type CsvBudget = {
@@ -15,7 +15,7 @@ export type CsvImportData = {
   settings?: Settings;
   transactions: Omit<Transaction, "id">[];
   budgets: CsvBudget[];
-  errors: { line: number; message: string }[];
+  displayName?: string;\n  errors: { line: number; message: string }[];
 };
 
 const clean = (value: string | undefined) => (value ?? "").trim();
@@ -51,9 +51,9 @@ const csvCell = (value: unknown) => {
   const text = value === null || value === undefined ? "" : String(value);
   return /[;"\n\r]/.test(text) ? '"' + text.replace(/"/g, '""') + '"' : text;
 };
-export function createCsv(settings: Settings, transactions: Transaction[], budgets: CsvBudget[]) {
+export function createCsv(settings: Settings, transactions: Transaction[], budgets: CsvBudget[], displayName = "") {
   const rows: unknown[][] = [[...csvHeaders]];
-  rows.push(["CONFIGURACAO", settings.initial_balance, settings.initial_date, settings.daily_rate, settings.monthly_deposit, settings.deposit_start, settings.fgts, settings.goal ?? ""]);
+  rows.push(["CONFIGURACAO", settings.initial_balance, settings.initial_date, settings.daily_rate, settings.monthly_deposit, settings.deposit_start, settings.fgts, settings.goal ?? "", "", "", "", "", "", "", "", "", displayName]);
   for (const transaction of transactions) rows.push([
     "LANCAMENTO", "", "", "", "", "", "", "", transaction.date, transaction.type,
     transaction.amount, transaction.category ?? "", transaction.description,
@@ -69,11 +69,11 @@ export function createCsv(settings: Settings, transactions: Transaction[], budge
 }
 export function parseCsvImport(source: string): CsvImportData {
   const rows = parseRows(source);
-  if (!rows.length) throw new Error("O arquivo está vazio.");
+  if (rows.length < 2) throw new Error("Adicione ao menos um registro depois do cabeçalho.");
   const headers = rows[0].map((h) => h.trim().toLowerCase());
   if (headers.join("|") !== csvHeaders.join("|")) throw new Error("Cabeçalho incompatível. Baixe o modelo CSV atualizado do Plano Casa.");
   const errors: CsvImportData["errors"] = [];
-  let settings: Settings | undefined;
+  let settings: Settings | undefined;\n  let displayName: string | undefined;
   const transactions: CsvImportData["transactions"] = [];
   const budgets = new Map<string, CsvBudget>();
   rows.slice(1).forEach((values, index) => {
@@ -90,7 +90,7 @@ export function parseCsvImport(source: string): CsvImportData {
           goal: decimal(row.meta_casa, true),
         });
         if (!parsed.success) throw new Error("Configuração inválida: " + parsed.error.issues.map((issue) => issue.message).join(", "));
-        settings = parsed.data;
+        settings = parsed.data;\n        displayName = row.nome_exibicao || undefined;
       } else if (row.tipo_registro === "LANCAMENTO") {
         const parsed = transactionSchema.safeParse({
           date: row.data, type: row.tipo, amount: decimal(row.valor),
@@ -120,5 +120,5 @@ export function parseCsvImport(source: string): CsvImportData {
       errors.push({ line, message: error instanceof Error ? error.message : "Dados inválidos." });
     }
   });
-  return { settings, transactions, budgets: [...budgets.values()], errors };
+  return { settings, displayName, transactions, budgets: [...budgets.values()], errors };
 }
