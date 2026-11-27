@@ -13,6 +13,7 @@ import {
   House,
   CircleHelp,
   CheckCircle2,
+  Check,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { usePlan } from "@/components/plan/provider";
@@ -332,10 +333,10 @@ function Index() {
                 <span>{category}</span>
                 <strong>{money(amount)}</strong>
                 {isBudgetConfirmed("despesa", category, amount) ? (
-                  <span className="text-income inline-flex items-center gap-1 text-xs"><CheckCircle2 size={14} /> Confirmada</span>
+                  <span className="text-income inline-flex items-center gap-1 text-xs"><CheckCircle2 size={14} /> Paga</span>
                 ) : (
-                  <Button size="sm" variant="outline" disabled={confirmingBudgetItem !== null} onClick={() => void confirmBudgetItem("despesa", category, amount)}>
-                    {confirmingBudgetItem === "despesa:" + category ? "Salvando…" : "Confirmar"}
+                  <Button size="icon" variant="outline" title="Confirmar pagamento da despesa" aria-label={"Confirmar pagamento de " + category} disabled={confirmingBudgetItem !== null} onClick={() => void confirmBudgetItem("despesa", category, amount)}>
+                    {confirmingBudgetItem === "despesa:" + category ? "…" : <Check size={17} />}
                   </Button>
                 )}
               </div>
