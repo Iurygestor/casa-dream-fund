@@ -2421,12 +2421,9 @@ h1 {
 }
 .bill-row-with-delete {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 38px;
+  grid-template-columns: minmax(0, 1fr) 42px;
   align-items: center;
   border-bottom: 1px solid var(--border);
-}
-.bill-row-with-delete:not(.has-delete) {
-  grid-template-columns: minmax(0, 1fr);
 }
 .bill-row-with-delete .bill-row {
   min-width: 0;
