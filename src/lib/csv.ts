@@ -1,4 +1,4 @@
-import { categories, dateSchema, monthSchema, settingsSchema, transactionSchema, type Settings, type Transaction } from "@/lib/finance";
+import { categories, monthSchema, settingsSchema, transactionSchema, type Settings, type Transaction } from "@/lib/finance";
 
 export const csvHeaders = [
   "tipo_registro", "saldo_inicial", "data_saldo_inicial", "rendimento_diario",
