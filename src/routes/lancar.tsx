@@ -37,7 +37,8 @@ function Launch() {
 }
 function LaunchForm({ initialType }: { initialType: TransactionType }) {
   const p = usePlan(),
-    navigate = useNavigate();
+    navigate = useNavigate(),
+    selectedCardId = creditCardId || p.creditCards[0]?.id || "";
   const [type, setType] = useState<TransactionType>(initialType),
     [amount, setAmount] = useState(""),
     [date, setDate] = useState(isoDate()),
@@ -61,7 +62,7 @@ function LaunchForm({ initialType }: { initialType: TransactionType }) {
       toast.error("Informe uma data válida e um valor maior que zero.");
       return;
     }
-    if (paymentMethod === "credit_card" && (!creditCardId || !p.creditCards.some((card) => card.id === creditCardId))) {
+    if (paymentMethod === "credit_card" && (!selectedCardId || !p.creditCards.some((card) => card.id === selectedCardId))) {
       toast.error("Selecione um cartão de crédito válido.");
       return;
     }
@@ -75,7 +76,7 @@ function LaunchForm({ initialType }: { initialType: TransactionType }) {
       result.data,
       depositBonus,
       paymentMethod === "credit_card"
-        ? { method: "credit_card", cardId: creditCardId, installments: installmentCount }
+        ? { method: "credit_card", cardId: selectedCardId, installments: installmentCount }
         : undefined,
     );
     setBusy(false);
@@ -165,7 +166,7 @@ function LaunchForm({ initialType }: { initialType: TransactionType }) {
                   <>
                     <label>
                       Cartão
-                      <select value={creditCardId} onChange={(e) => setCreditCardId(e.target.value)} required>
+                      <select value={selectedCardId} onChange={(e) => setCreditCardId(e.target.value)} required>
                         {p.creditCards.map((card) => (
                           <option key={card.id} value={card.id}>
                             {card.name} {card.last_four_digits ? "•••• " + card.last_four_digits : ""}
