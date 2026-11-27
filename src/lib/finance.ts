@@ -52,12 +52,12 @@ export const settingsSchema = z.object({
 });
 export type Settings = z.infer<typeof settingsSchema>;
 export const defaults = (today = isoDate()): Settings => ({
-  initial_balance: 9808.96,
+  initial_balance: 0,
   initial_date: today,
-  daily_rate: 0.0568,
-  monthly_deposit: 800,
-  deposit_start: "2027-01",
-  fgts: 6565.52,
+  daily_rate: 0,
+  monthly_deposit: 0,
+  deposit_start: today.slice(0, 7),
+  fgts: 0,
   goal: null,
 });
 export const transactionSchema = z
