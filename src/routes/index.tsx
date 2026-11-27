@@ -47,7 +47,7 @@ export const Route = createFileRoute("/")({
   component: Index,
 });
 
-type Bill = { category: (typeof categories)[number]; amount: number };
+type Bill = { category: (typeof categories)[number]; amount: number; dueDate?: string };
 type BillFilter = "all" | "pending" | "paid";
 const paymentDescription = (category: string, month: string) => "Baixa de conta: " + category + " | " + month;
 
@@ -70,13 +70,12 @@ function Index() {
     .filter((item) => item.amount > 0)
     .sort((a, b) => b.amount - a.amount);
   const plannedExpenses = plannedCategories.reduce((sum, item) => sum + item.amount, 0);
-  const invoiceTotal = p.creditCardInvoices
-    .filter((invoice) => invoice.reference_month.startsWith(month))
-    .reduce((sum, invoice) => sum + Math.max(0, invoice.total_amount - invoice.paid_amount), 0);
+  const monthInvoices = p.creditCardInvoices.filter((invoice) => invoice.reference_month.startsWith(month));
+  const invoiceTotal = monthInvoices.reduce((sum, invoice) => sum + Math.max(0, invoice.total_amount - invoice.paid_amount), 0);
   const bills = useMemo(() => {
     const result: Bill[] = plannedCategories.map((item) => ({ ...item }));
     if (invoiceTotal > 0 && !result.some((item) => item.category === "Fatura C6")) {
-      result.push({ category: "Fatura C6", amount: invoiceTotal });
+      result.push({ category: "Fatura C6", amount: invoiceTotal, dueDate: monthInvoices.map((invoice) => invoice.due_date).sort()[0] });
     }
     return result.sort((a, b) => b.amount - a.amount);
   }, [plannedCategories, invoiceTotal]);
@@ -147,7 +146,7 @@ function Index() {
             type: "despesa",
             amount: bill.amount,
             category: bill.category,
-            description: paymentDescription(bill.category),
+            description: paymentDescription(bill.category, month),
           },
           false,
         );
@@ -257,7 +256,7 @@ function Index() {
                     <span className="bill-check">{isBusy ? <span className="bill-spinner" /> : paid ? <Check size={17} /> : <Circle size={21} />}</span>
                     <span className="bill-main">
                       <strong>{bill.category}</strong>
-                      <span>{paid && transaction ? `Pago em ${dateValue(transaction.date).toLocaleDateString("pt-BR")}` : "Vencimento conforme seu planejamento"}</span>
+                      <span>{paid && transaction ? `Pago em ${dateValue(transaction.date).toLocaleDateString("pt-BR")}` : bill.dueDate ? `Vencimento ${dateValue(bill.dueDate).toLocaleDateString("pt-BR")}` : "Vencimento não informado"}</span>
                     </span>
                     <span className={`bill-status ${paid ? "paid" : "pending"}`}>{paid ? "Pago" : "A pagar"}</span>
                     <strong className="bill-amount">{money(bill.amount)}</strong>
