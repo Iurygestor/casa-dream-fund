@@ -45,6 +45,7 @@ function LaunchForm({ initialType, initialReceivable }: { initialType: Transacti
     [date, setDate] = useState(isoDate()),
     [category, setCategory] = useState<(typeof categories)[number]>("Aluguel"),
     [description, setDescription] = useState(""),
+    [receivableSource, setReceivableSource] = useState(""),
     [paymentMethod, setPaymentMethod] = useState<"none" | "credit_card">("none"),
     [creditCardId, setCreditCardId] = useState(p.creditCards[0]?.id ?? ""),
     [installments, setInstallments] = useState("1"),
@@ -63,6 +64,13 @@ function LaunchForm({ initialType, initialReceivable }: { initialType: Transacti
     if (!result.success) {
       toast.error("Informe uma data válida e um valor maior que zero.");
       return;
+    }
+    if (isReceivable && !receivableSource.trim()) {
+      toast.error("Informe de quem ou de onde você vai receber esse valor.");
+      return;
+    }
+    if (isReceivable) {
+      result.data.description = RECEIVABLE_PREFIX + "Fonte: " + receivableSource.trim() + " | " + description.trim();
     }
     if (paymentMethod === "credit_card" && (!selectedCardId || !p.creditCards.some((card) => card.id === selectedCardId))) {
       toast.error("Selecione um cartão de crédito válido.");
@@ -123,7 +131,21 @@ function LaunchForm({ initialType, initialReceivable }: { initialType: Transacti
                 </Button>
               </div>
             </div>
-            {isReceivable && <p className="subtle-note receivable-form-note">Este valor ficará como pendente e só entrará nas receitas quando você marcar como recebido.</p>}
+            {isReceivable && (
+              <>
+                <p className="subtle-note receivable-form-note">Informe quem vai pagar ou de onde virá o dinheiro. O valor só entra nas receitas quando você marcar como recebido.</p>
+                <label>
+                  Fonte do recebimento
+                  <input
+                    value={receivableSource}
+                    onChange={(e) => setReceivableSource(e.target.value)}
+                    maxLength={120}
+                    placeholder="Ex.: Empresa, cliente, pessoa..."
+                    required
+                  />
+                </label>
+              </>
+            )}
             <div className="field-grid">
               <label>
                 Valor
