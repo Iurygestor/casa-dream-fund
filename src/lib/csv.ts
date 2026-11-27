@@ -4,12 +4,14 @@ export const csvHeaders = [
   "tipo_registro", "saldo_inicial", "data_saldo_inicial", "rendimento_diario",
   "aporte_mensal", "inicio_aportes", "fgts", "meta_casa", "data", "tipo",
   "valor", "categoria", "descricao", "mes", "receita_planejada", "despesa_planejada", "nome_exibicao",
+  "origem_receita", "valor_receita",
 ] as const;
 
 export type CsvBudget = {
   month: string;
   planned_income: number;
   planned_expenses: Record<string, number>;
+  planned_income_sources: Record<string, number>;
 };
 export type CsvImportData = {
   settings?: Settings;
@@ -54,16 +56,19 @@ const csvCell = (value: unknown) => {
 };
 export function createCsv(settings: Settings, transactions: Transaction[], budgets: CsvBudget[], displayName = "") {
   const rows: unknown[][] = [[...csvHeaders]];
-  rows.push(["CONFIGURACAO", settings.initial_balance, settings.initial_date, settings.daily_rate, settings.monthly_deposit, settings.deposit_start, settings.fgts, settings.goal ?? "", "", "", "", "", "", "", "", "", displayName]);
+  rows.push(["CONFIGURACAO", settings.initial_balance, settings.initial_date, settings.daily_rate, settings.monthly_deposit, settings.deposit_start, settings.fgts, settings.goal ?? "", "", "", "", "", "", "", "", "", displayName, "", ""]);
   for (const transaction of transactions) rows.push([
     "LANCAMENTO", "", "", "", "", "", "", "", transaction.date, transaction.type,
-    transaction.amount, transaction.category ?? "", transaction.description,
+    transaction.amount, transaction.category ?? "", transaction.description, "", "", "", "", "",
   ]);
   for (const budget of budgets) {
     const entries = Object.entries(budget.planned_expenses);
-    if (!entries.length) rows.push(["ORCAMENTO", "", "", "", "", "", "", "", "", "", "", "", "", budget.month, budget.planned_income, ""]);
+    if (!entries.length) rows.push(["ORCAMENTO", "", "", "", "", "", "", "", "", "", "", "", "", budget.month, budget.planned_income, "", "", "", ""]);
     else for (const [category, amount] of entries) rows.push([
-      "ORCAMENTO", "", "", "", "", "", "", "", "", "", "", "", "", budget.month, budget.planned_income, category + "=" + amount,
+      "ORCAMENTO", "", "", "", "", "", "", "", "", "", "", "", "", budget.month, budget.planned_income, category + "=" + amount, "", "", "",
+    ]);
+    for (const [origin, amount] of Object.entries(budget.planned_income_sources ?? {})) rows.push([
+      "RECEITA_PLANEJADA", "", "", "", "", "", "", "", "", "", "", "", "", budget.month, "", "", "", origin, amount,
     ]);
   }
   return "\uFEFF" + rows.map((row) => row.map(csvCell).join(";")).join("\r\n");
@@ -80,6 +85,7 @@ export function parseCsvImport(source: string): CsvImportData {
   let displayName: string | undefined;
   const transactions: CsvImportData["transactions"] = [];
   const budgets = new Map<string, CsvBudget>();
+  const incomeSources = new Map<string, { sources: Record<string, number>; lines: number[] }>();
   rows.slice(1).forEach((values, index) => {
     const line = index + 2;
     const row = Object.fromEntries(csvHeaders.map((header, i) => [header, clean(values[i])])) as Record<(typeof csvHeaders)[number], string>;
@@ -107,7 +113,7 @@ export function parseCsvImport(source: string): CsvImportData {
         if (!monthSchema.safeParse(row.mes).success) throw new Error("Mês do orçamento inválido. Use AAAA-MM.");
         const income = decimal(row.receita_planejada);
         if (income === null || !Number.isFinite(income) || income < 0) throw new Error("Receita planejada inválida.");
-        const current = budgets.get(row.mes) ?? { month: row.mes, planned_income: income, planned_expenses: {} };
+        const current = budgets.get(row.mes) ?? { month: row.mes, planned_income: income, planned_expenses: {}, planned_income_sources: {} };
         if (current.planned_income !== income) throw new Error("A receita planejada deve ser igual em todas as linhas do mesmo mês.");
         if (row.despesa_planejada) {
           const split = row.despesa_planejada.lastIndexOf("=");
@@ -120,11 +126,38 @@ export function parseCsvImport(source: string): CsvImportData {
           current.planned_expenses[category] = amount;
         }
         budgets.set(row.mes, current);
-      } else throw new Error("tipo_registro deve ser CONFIGURACAO, LANCAMENTO ou ORCAMENTO.");
+      } else if (row.tipo_registro === "RECEITA_PLANEJADA") {
+        if (!monthSchema.safeParse(row.mes).success) throw new Error("Mês da receita planejada inválido. Use AAAA-MM.");
+        const origin = row.origem_receita.trim();
+        if (!origin || origin.length > 100) throw new Error("Informe a origem da receita (até 100 caracteres).");
+        const amount = decimal(row.valor_receita);
+        if (amount === null || !Number.isFinite(amount) || amount <= 0) throw new Error("Valor da receita planejada deve ser maior que zero.");
+        const current = incomeSources.get(row.mes) ?? { sources: {}, lines: [] };
+        if (Object.hasOwn(current.sources, origin)) throw new Error("Origem de receita repetida neste mês: " + origin);
+        current.sources[origin] = amount;
+        current.lines.push(line);
+        incomeSources.set(row.mes, current);
+      } else throw new Error("tipo_registro deve ser CONFIGURACAO, LANCAMENTO, ORCAMENTO ou RECEITA_PLANEJADA.");
     } catch (error) {
       errors.push({ line, message: error instanceof Error ? error.message : "Dados inválidos." });
     }
   });
+  for (const [month, entry] of incomeSources) {
+    const budget = budgets.get(month);
+    if (!budget) {
+      errors.push({ line: entry.lines[0] ?? 2, message: "Cadastre também uma linha ORCAMENTO para o mês desta receita." });
+      continue;
+    }
+    const sourceTotal = Object.values(entry.sources).reduce((sum, amount) => sum + amount, 0);
+    if (Math.round(sourceTotal * 100) !== Math.round(budget.planned_income * 100)) {
+      errors.push({
+        line: entry.lines[0] ?? 2,
+        message: `A soma das origens de receita (${sourceTotal.toFixed(2)}) deve ser igual à receita planejada do mês (${budget.planned_income.toFixed(2)}).`,
+      });
+      continue;
+    }
+    budget.planned_income_sources = entry.sources;
+  }
   return {
     ...(settings ? { settings } : {}),
     ...(displayName !== undefined ? { displayName } : {}),
