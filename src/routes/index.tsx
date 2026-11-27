@@ -24,14 +24,13 @@ import {
   CloudNotice,
 } from "@/components/plan/shared";
 import {
-  budget,
   monthlyTotals,
+  plannedDeposit,
   money,
   monthName,
   monthSchema,
   shiftMonth,
   reserveBalance,
-  referenceCategories,
 } from "@/lib/finance";
 import { pageHead } from "@/lib/metadata";
 export const Route = createFileRoute("/")({
@@ -53,11 +52,23 @@ function Index() {
     month = search.month ?? "2026-12";
   const [categoryMode, setCategoryMode] = useState<"real" | "plan">("real");
   const totals = monthlyTotals(p.transactions, month),
-    plan = budget(month, p.settings),
+    monthlyPlan = p.budgets.find((item) => item.month === month),
+    plannedIncome = monthlyPlan?.planned_income ?? 0,
+    plannedCategories = Object.entries(monthlyPlan?.planned_expenses ?? {})
+      .map(([category, amount]) => ({ category, amount }))
+      .sort((a, b) => b.amount - a.amount),
+    plannedExpenses = plannedCategories.reduce((sum, item) => sum + item.amount, 0),
+    planDeposit = plannedDeposit(month, p.settings),
+    plan = {
+      income: plannedIncome,
+      expenses: plannedExpenses,
+      deposit: planDeposit,
+      remaining: plannedIncome - plannedExpenses - planDeposit,
+    },
     balance = reserveBalance(p.settings, p.transactions) ?? p.settings.initial_balance;
   const cats =
     categoryMode === "plan"
-      ? referenceCategories(month)
+      ? plannedCategories
       : Object.entries(
           totals.rows
             .filter((t) => t.type === "despesa")
@@ -253,7 +264,7 @@ function Index() {
                 description={
                   categoryMode === "real"
                     ? "Suas despesas aparecerão conforme os lançamentos."
-                    : "As categorias de referência começam em janeiro de 2027."
+                    : "Cadastre um orçamento para este mês para visualizar as categorias planejadas."
                 }
                 action={
                   categoryMode === "real" ? (
@@ -293,9 +304,9 @@ function Index() {
               <strong>{money(plan.remaining)}</strong>
             </div>
             <p className="budget-note">
-              {month >= "2027-01"
-                ? "A receita de R$ 4.000,00 é faturamento, não renda líquida presumida."
-                : "Dezembro é o ponto de partida. Os depósitos do plano começam em janeiro de 2027."}
+              {monthlyPlan
+                ? "Valores planejados cadastrados para este mês."
+                : "Nenhum orçamento cadastrado para este mês."}
             </p>
           </div>
         </section>
