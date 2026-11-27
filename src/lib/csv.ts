@@ -15,7 +15,8 @@ export type CsvImportData = {
   settings?: Settings;
   transactions: Omit<Transaction, "id">[];
   budgets: CsvBudget[];
-  displayName?: string;\n  errors: { line: number; message: string }[];
+  displayName?: string;
+  errors: { line: number; message: string }[];
 };
 
 const clean = (value: string | undefined) => (value ?? "").trim();
