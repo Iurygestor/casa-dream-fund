@@ -229,6 +229,7 @@ function ProjectionView() {
   const selectedBudget = p.budgets.find((item) => item.month === budgetMonth);
   const selectedTransactions = p.transactions.filter((transaction) => monthKey(transaction.date) === budgetMonth);
   const selectedTotals = monthlyTotals(p.transactions, budgetMonth);
+  const selectedMonthOverview = overviewData.find((row) => row.month === budgetMonth);
   const selectedInvoices = p.creditCardInvoices.filter((invoice) => invoice.due_date.slice(0, 7) === budgetMonth && invoice.status !== "paid");
   const invoiceOutstanding = sum(selectedInvoices.map((invoice) => Math.max(0, invoice.total_amount - invoice.paid_amount)));
   const plannedIncome = selectedBudget?.planned_income ?? (budgetMonth > currentMonth ? selectedMonthOverview?.projectedIncome ?? 0 : selectedTotals.income);
@@ -240,6 +241,8 @@ function ProjectionView() {
   }, {}));
   const expenseEntries = selectedBudget ? plannedExpenseEntries : budgetMonth > currentMonth ? [...forecastRows.recurringExpenses.entries()] : actualExpenseEntries;
   const expenseTotal = expenseEntries.reduce((total, [, value]) => total + value, 0);
+  const budgetInvoiceAmount = expenseEntries.find(([category]) => category.toLowerCase().includes("fatura"))?.[1] ?? 0;
+  const invoiceAdjustment = Math.max(0, invoiceOutstanding - budgetInvoiceAmount);
   const previousMonth = shiftMonth(budgetMonth, -1);
   const previousBudget = p.budgets.find((item) => item.month === previousMonth);
   const previousTotals = monthlyTotals(p.transactions, previousMonth);
@@ -249,8 +252,6 @@ function ProjectionView() {
     : previousTotals.expenses;
   const incomeChange = previousIncome > 0 ? ((plannedIncome - previousIncome) / previousIncome) * 100 : null;
   const expenseChange = previousExpenses > 0 ? ((expenseTotal - previousExpenses) / previousExpenses) * 100 : null;
-
-  const selectedMonthOverview = overviewData.find((row) => row.month === budgetMonth);
 
   const goalMonthsSaved = (() => {
     if (!p.settings.goal || !currentProjection.goalMonth || !baseProjection.goalMonth) return null;
@@ -386,10 +387,10 @@ function ProjectionView() {
             <div className="budget-line total"><span>Total de receitas {selectedBudget ? "previstas" : "registradas"}</span><strong>{money(plannedIncome)}</strong></div>
             <p className="budget-eyebrow">DESPESAS POR CATEGORIA</p>
             {expenseEntries.length ? expenseEntries.sort((a, b) => b[1] - a[1]).map(([category, value]) => <div className="budget-line" key={category}><span>{category}</span><strong>− {money(value)}</strong></div>) : <p className="subtle-note">Nenhuma despesa detalhada para este mês.</p>}
-            {invoiceOutstanding > 0 && !expenseEntries.some(([category]) => category.toLowerCase().includes("fatura")) && <div className="budget-line"><span>Faturas de cartão em aberto</span><strong>− {money(invoiceOutstanding)}</strong></div>}
-            <div className="budget-line total"><span>Total de despesas</span><strong>− {money(expenseTotal + (invoiceOutstanding > 0 && !expenseEntries.some(([category]) => category.toLowerCase().includes("fatura")) ? invoiceOutstanding : 0))}</strong></div>
+            {invoiceAdjustment > 0 && <div className="budget-line"><span>Ajuste de faturas em aberto</span><strong>− {money(invoiceAdjustment)}</strong></div>}
+            <div className="budget-line total"><span>Total de despesas</span><strong>− {money(expenseTotal + invoiceAdjustment)}</strong></div>
             <div className="budget-line"><span>Aporte mensal do plano</span><strong>− {money(plannedDeposit(budgetMonth, p.settings))}</strong></div>
-            <div className="budget-line total"><span>Sobra estimada após despesas e aporte</span><strong>{money(plannedIncome - expenseTotal - (invoiceOutstanding > 0 && !expenseEntries.some(([category]) => category.toLowerCase().includes("fatura")) ? invoiceOutstanding : 0) - plannedDeposit(budgetMonth, p.settings))}</strong></div>
+            <div className="budget-line total"><span>Sobra estimada após despesas e aporte</span><strong>{money(plannedIncome - expenseTotal - invoiceAdjustment - plannedDeposit(budgetMonth, p.settings))}</strong></div>
           </>
         ) : <div className="projection-empty compact"><strong>Nenhum dado para {monthName(budgetMonth)}.</strong><span>Quando houver lançamentos, orçamento ou fatura, o detalhamento aparecerá aqui.</span></div>}
         <p className="projection-chart-hint">Mês selecionado no gráfico: {monthName(budgetMonth)}. Valores previstos vêm do orçamento e das faturas; quando não há orçamento futuro, usamos a média dos últimos três meses para receitas e categorias de despesas recorrentes.</p>
