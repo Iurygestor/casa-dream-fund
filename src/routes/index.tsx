@@ -12,6 +12,7 @@ import {
   TrendingUp,
   TrendingDown,
   Wallet,
+  Trash2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { usePlan } from "@/components/plan/provider";
@@ -20,6 +21,7 @@ import {
   SectionHeading,
   Empty,
   CloudNotice,
+  Confirm,
 } from "@/components/plan/shared";
 import {
   plannedDeposit,
@@ -61,6 +63,7 @@ function Index() {
   const [busyBill, setBusyBill] = useState<string | null>(null);
   const [bulkBusy, setBulkBusy] = useState(false);
   const [busyReceivable, setBusyReceivable] = useState<string | null>(null);
+  const [deletingPayment, setDeletingPayment] = useState<string | null>(null);
   const monthlyPlan = p.budgets.find((item) => item.month === month);
   const plannedIncome = monthlyPlan?.planned_income ?? 0;
   const plannedCategories = Object.entries(monthlyPlan?.planned_expenses ?? {})
@@ -400,12 +403,28 @@ function Index() {
                   <span>Pago em {dateValue(transaction.date).toLocaleDateString("pt-BR")}</span>
                 </div>
                 <strong className="transaction-value month-payment-value">− {money(transaction.amount)}</strong>
+                <Button variant="ghost" size="icon" title="Excluir despesa" aria-label={`Excluir despesa ${transaction.category ?? ""}`} onClick={() => setDeletingPayment(transaction.id)}>
+                  <Trash2 size={15} />
+                </Button>
               </div>
             ))}
           </div>
         ) : (
           <div className="panel no-payments-empty">Ainda sem saídas. Toque em uma conta acima para dar baixa.</div>
         )}
+        <Confirm
+          open={!!deletingPayment}
+          onOpenChange={(open) => { if (!open) setDeletingPayment(null); }}
+          title="Excluir despesa?"
+          description={(() => {
+            const item = paymentTransactions.find((transaction) => transaction.id === deletingPayment);
+            return item ? `${item.category ?? "Despesa"} • ${money(item.amount)}. A baixa desta conta também será removida.` : "Esta ação não pode ser desfeita.";
+          })()}
+          onConfirm={async () => {
+            if (deletingPayment) await p.remove(deletingPayment);
+            setDeletingPayment(null);
+          }}
+        />
         <div className="month-new-entry">
           <Button variant="outline" asChild><Link to="/lancar"><Plus size={16} /> Novo lançamento</Link></Button>
         </div>
