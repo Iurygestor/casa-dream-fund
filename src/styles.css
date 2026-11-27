@@ -2293,3 +2293,373 @@ h1 {
     height: 19px;
   }
 }
+
+
+/* Monthly overview and interactive bill settlement */
+.month-highlight-grid {
+  grid-template-columns: minmax(0, 1.55fr) minmax(300px, 1fr);
+  align-items: stretch;
+}
+.month-balance-card {
+  min-height: 242px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+.month-balance-card .balance-value {
+  font-family: "Bricolage Grotesque", var(--font-sans);
+  font-size: clamp(37px, 4vw, 49px);
+  letter-spacing: -1.5px;
+  margin: 8px 0 13px;
+}
+.month-progress-track {
+  width: 100%;
+  height: 8px;
+  background: color-mix(in oklch, var(--hero-text) 17%, transparent);
+  border-radius: 99px;
+  overflow: hidden;
+}
+.month-progress-track span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: #8bd3a6;
+  transition: width 220ms ease;
+}
+.month-balance-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  padding-top: 17px;
+  margin-top: 16px;
+  border-top: 1px solid var(--hero-rule);
+}
+.month-balance-stats > div {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+}
+.month-balance-stats strong {
+  color: var(--hero-text);
+  font-size: 15px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.month-balance-stats span {
+  color: var(--hero-muted);
+  font-size: 10px;
+}
+.month-reserve-card {
+  min-height: 242px;
+}
+.reserve-details {
+  display: grid;
+  gap: 11px;
+  padding: 15px 0;
+  margin-top: 12px;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+.reserve-details > div {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  font-size: 11px;
+}
+.reserve-details span {
+  color: var(--muted-foreground);
+}
+.reserve-details strong {
+  font-size: 12px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.bills-section {
+  margin: 28px 0 30px;
+}
+.bills-panel {
+  padding: 0;
+}
+.bill-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+}
+.bill-filters {
+  display: flex;
+  gap: 4px;
+  padding: 3px;
+  background: var(--muted);
+  border-radius: 10px;
+}
+.bill-filters button {
+  height: 31px;
+  padding: 0 13px;
+  border-radius: 7px;
+  font-size: 11px;
+  color: var(--muted-foreground);
+}
+.bill-filters button.selected {
+  background: var(--card);
+  color: var(--foreground);
+  box-shadow: var(--shadow-card);
+}
+.bill-total-label {
+  color: var(--muted-foreground);
+  font-size: 11px;
+  font-weight: 500;
+}
+.bill-list {
+  display: flex;
+  flex-direction: column;
+}
+.bill-row {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  min-height: 78px;
+  padding: 13px 20px;
+  text-align: left;
+  color: var(--foreground);
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  transition: background 150ms ease;
+}
+.bill-row:hover:not(:disabled) {
+  background: var(--muted);
+}
+.bill-row:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: -3px;
+}
+.bill-check {
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border: 1.5px solid var(--border);
+  border-radius: 50%;
+  color: var(--muted-foreground);
+}
+.bill-row.is-paid .bill-check {
+  color: white;
+  background: var(--income);
+  border-color: var(--income);
+}
+.bill-main {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.bill-main strong {
+  font-size: 13px;
+  font-weight: 600;
+  transition: color 150ms ease;
+}
+.bill-main > span {
+  color: var(--muted-foreground);
+  font-size: 10px;
+}
+.bill-row.is-paid .bill-main strong {
+  color: var(--muted-foreground);
+  text-decoration: line-through;
+}
+.bill-status {
+  justify-self: end;
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-size: 10px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.bill-status.pending {
+  color: oklch(0.53 0.12 75);
+  background: oklch(0.96 0.045 85);
+}
+.bill-status.paid {
+  color: var(--income);
+  background: var(--income-soft);
+}
+.bill-amount {
+  min-width: 100px;
+  text-align: right;
+  font-size: 13px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.bill-row.is-paid .bill-amount {
+  color: var(--income);
+}
+.bill-spinner {
+  width: 15px;
+  height: 15px;
+  border: 2px solid var(--border);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: bill-spin .7s linear infinite;
+}
+@keyframes bill-spin { to { transform: rotate(360deg); } }
+.bill-empty,
+.no-payments-empty {
+  padding: 28px 20px;
+  color: var(--muted-foreground);
+  text-align: center;
+  font-size: 12px;
+}
+.bill-actions {
+  display: flex;
+  justify-content: flex-end;
+  padding: 15px 20px;
+  background: color-mix(in oklch, var(--muted) 45%, transparent);
+}
+.bill-actions button {
+  min-height: 40px;
+  border-radius: 10px;
+  font-size: 11px;
+}
+.month-detail-grid {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  align-items: stretch;
+}
+.month-budget-panel,
+.month-categories-panel {
+  min-height: 250px;
+}
+.month-budget-panel .budget-line.is-negative strong {
+  color: var(--expense);
+}
+.month-budget-panel .budget-line.total strong {
+  color: var(--primary);
+}
+.month-budget-panel .budget-line.total.is-negative strong {
+  color: var(--expense);
+}
+.category-bar {
+  height: 6px;
+  background: var(--muted);
+  border-radius: 99px;
+  overflow: hidden;
+}
+.category-bar span {
+  display: block;
+  height: 100%;
+  background: var(--primary);
+  border-radius: inherit;
+}
+.month-payments-section {
+  margin-top: 30px;
+}
+.month-payment-row {
+  min-height: 69px;
+}
+.month-payment-row .transaction-info span {
+  display: block;
+  margin-top: 5px;
+  font-size: 10px;
+  color: var(--muted-foreground);
+}
+.month-payment-value {
+  color: var(--expense);
+  font-variant-numeric: tabular-nums;
+}
+.month-new-entry {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 13px;
+}
+.month-new-entry button {
+  min-height: 38px;
+  font-size: 11px;
+}
+@media (prefers-color-scheme: dark) {
+  .bill-status.pending {
+    color: oklch(0.86 0.11 83);
+    background: oklch(0.31 0.045 82);
+  }
+}
+@media (max-width: 700px) {
+  .month-highlight-grid,
+  .month-detail-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 15px;
+  }
+  .month-balance-card,
+  .month-reserve-card {
+    min-height: 0;
+  }
+  .month-balance-card {
+    padding: 22px 20px;
+  }
+  .month-balance-stats {
+    gap: 8px;
+  }
+  .month-balance-stats strong {
+    font-size: 12px;
+  }
+  .month-balance-stats span {
+    font-size: 9px;
+  }
+  .bill-toolbar {
+    align-items: flex-start;
+    flex-direction: column;
+    padding: 13px 14px;
+  }
+  .bill-filters {
+    width: 100%;
+  }
+  .bill-filters button {
+    flex: 1;
+    padding-inline: 7px;
+  }
+  .bill-row {
+    grid-template-columns: 29px minmax(0, 1fr) auto;
+    gap: 10px;
+    min-height: 74px;
+    padding: 12px 13px;
+  }
+  .bill-check {
+    width: 27px;
+    height: 27px;
+  }
+  .bill-main strong {
+    font-size: 12px;
+  }
+  .bill-main > span {
+    font-size: 9px;
+  }
+  .bill-status {
+    grid-column: 2;
+    justify-self: start;
+    grid-row: 2;
+    margin-top: -4px;
+    padding: 4px 8px;
+    font-size: 9px;
+  }
+  .bill-amount {
+    grid-column: 3;
+    grid-row: 1 / span 2;
+    min-width: 0;
+    font-size: 12px;
+  }
+  .bill-actions {
+    padding: 13px;
+  }
+  .bill-actions button {
+    width: 100%;
+  }
+  .month-payment-row {
+    padding: 13px 12px;
+  }
+  .month-payment-value {
+    font-size: 11px;
+  }
+}
