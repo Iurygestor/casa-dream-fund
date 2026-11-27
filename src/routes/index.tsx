@@ -340,7 +340,7 @@ function Index() {
             ) : (
               <div className="receivable-empty">Nenhuma conta a receber cadastrada para este mês.</div>
             )}
-            <div className="receivable-footer"><span>Entradas pendentes não entram no saldo até serem recebidas.</span><Link to="/lancar" search={{ type: "recebimento" }}>Adicionar a receber <ArrowUpRight size={13} /></Link></div>
+            <div className="receivable-footer"><span>Entradas pendentes não entram no saldo até serem recebidas.</span><Link to="/lancar" search={{ type: "recebimento", receivable: true }}>Adicionar a receber <ArrowUpRight size={13} /></Link></div>
           </div>
           {bills.length > 0 && (
             <div className="bill-actions">
