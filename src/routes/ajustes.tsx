@@ -16,7 +16,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { usePlan } from "@/components/plan/provider";
 import { PageHeading, Confirm, CloudNotice } from "@/components/plan/shared";
-import { parseDecimal, settingsSchema, backupSchema, isoDate, type Settings } from "@/lib/finance";
+import { parseDecimal, settingsSchema, isoDate, type Settings } from "@/lib/finance";
 import { pageHead } from "@/lib/metadata";
 import { createCsv, csvHeaders, parseCsvImport, type CsvImportData } from "@/lib/csv";
 import { toast } from "sonner";
@@ -24,7 +24,7 @@ export const Route = createFileRoute("/ajustes")({
   head: () =>
     pageHead(
       "Ajustes",
-      "Edite o perfil e os parâmetros do plano, faça backup e adicione o Plano Casa à tela inicial do iPhone.",
+      "Edite o perfil e os parâmetros do plano, importe e exporte seus dados em CSV e adicione o Plano Casa à tela inicial do iPhone.",
     ),
   component: SettingsPage,
 });
@@ -36,7 +36,6 @@ function SettingsPage() {
 }
 function SettingsForm() {
   const p = usePlan(),
-    fileInput = useRef<HTMLInputElement>(null),
     csvInput = useRef<HTMLInputElement>(null),
     [name, setName] = useState(p.displayName),
     [fields, setFields] = useState<Record<keyof Settings, string>>({
@@ -50,7 +49,6 @@ function SettingsForm() {
     }),
     [busy, setBusy] = useState(false),
     [clearOpen, setClearOpen] = useState(false),
-    [backup, setBackup] = useState<unknown>(null),
     [csvPreview, setCsvPreview] = useState<CsvImportData | null>(null),
     [csvBusy, setCsvBusy] = useState(false);
   const set = (key: keyof Settings, value: string) => setFields((f) => ({ ...f, [key]: value }));
@@ -74,35 +72,6 @@ function SettingsForm() {
     setBusy(true);
     await p.saveSettings(result.data, name);
     setBusy(false);
-  }
-  async function exportBackup() {
-    if (!p.user) {
-      p.setAuthOpen(true);
-      return;
-    }
-    const blob = new Blob(
-      [
-        JSON.stringify(
-          {
-            version: 1,
-            exported_at: new Date().toISOString(),
-            settings: p.settings,
-            transactions: p.transactions,
-            profile: { display_name: p.displayName },
-          },
-          null,
-          2,
-        ),
-      ],
-      { type: "application/json" },
-    );
-    const url = URL.createObjectURL(blob),
-      a = document.createElement("a");
-    a.href = url;
-    a.download = `plano-casa-${isoDate()}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-    toast.success("Backup exportado");
   }
   function downloadCsv(content: string, filename: string) {
     const url = URL.createObjectURL(new Blob([content], { type: "text/csv;charset=utf-8" }));
@@ -141,16 +110,6 @@ function SettingsForm() {
       toast.error(error instanceof Error ? error.message : "Falha ao importar a planilha.");
       throw error;
     } finally { setCsvBusy(false); }
-  }
-  async function importFile(file: File | undefined) {
-    if (!file) return;
-    try {
-      const parsed = backupSchema.parse(JSON.parse(await file.text()));
-      setBackup(parsed);
-    } catch {
-      toast.error("Este arquivo não é um backup válido do Plano Casa.");
-    }
-    if (fileInput.current) fileInput.current.value = "";
   }
   return (
     <>
@@ -258,52 +217,6 @@ function SettingsForm() {
               <ShieldCheck size={17} />
               Seus dados
             </h2>
-            <div className="settings-action">
-              <Download size={19} />
-              <div>
-                <strong>Exportar backup</strong>
-                <p>Seu plano em um arquivo JSON.</p>
-              </div>
-              <Button
-                variant="ghost"
-                size="icon"
-                title="Exportar backup"
-                aria-label="Exportar backup"
-                onClick={exportBackup}
-                disabled={p.loading}
-              >
-                <Download size={18} />
-              </Button>
-            </div>
-            <div className="settings-action">
-              <Upload size={19} />
-              <div>
-                <strong>Importar backup</strong>
-                <p>Substitui os dados atuais do plano.</p>
-              </div>
-              <Button
-                variant="ghost"
-                size="icon"
-                title="Importar backup"
-                aria-label="Importar backup"
-                onClick={() => {
-                  if (!p.user) {
-                    p.setAuthOpen(true);
-                    return;
-                  }
-                  fileInput.current?.click();
-                }}
-              >
-                <Upload size={18} />
-              </Button>
-              <input
-                ref={fileInput}
-                type="file"
-                accept=".json,application/json"
-                className="hidden"
-                onChange={(e) => void importFile(e.target.files?.[0])}
-              />
-            </div>
             <div className="mt-4 border-t pt-4">
               <h3 className="font-semibold">Planilha CSV — Plano Casa</h3>
               <p className="subtle-note">Preencha no Excel ou Google Planilhas. Adicione uma linha CONFIGURACAO, linhas LANCAMENTO e linhas ORCAMENTO conforme necessário. Use datas AAAA-MM-DD, meses AAAA-MM, valores em reais e despesas planejadas no formato Categoria=Valor. A importação valida e preserva os lançamentos existentes.</p>
@@ -396,7 +309,7 @@ function SettingsForm() {
         open={clearOpen}
         onOpenChange={setClearOpen}
         title="Apagar todos os lançamentos?"
-        description="Seus lançamentos serão excluídos da nuvem em todos os aparelhos. Exporte um backup antes de continuar. Os ajustes e o perfil serão mantidos."
+        description="Seus lançamentos serão excluídos da nuvem em todos os aparelhos. Exporte seus dados em CSV antes de continuar. Os ajustes e o perfil serão mantidos."
         label="Apagar lançamentos"
         onConfirm={p.clear}
       />
@@ -407,19 +320,6 @@ function SettingsForm() {
         description={csvPreview ? `Encontrados: ${csvPreview.settings ? "1 configuração, " : ""}${csvPreview.transactions.length} lançamentos, ${csvPreview.budgets.length} orçamentos mensais. Os dados atuais serão mantidos; lançamentos idênticos serão ignorados e orçamentos do mesmo mês serão atualizados.` : ""}
         label={csvBusy ? "Importando…" : "Importar dados"}
         onConfirm={confirmCsvImport}
-      />
-      <Confirm
-        open={backup !== null}
-        onOpenChange={(v) => {
-          if (!v) setBackup(null);
-        }}
-        title="Restaurar este backup?"
-        description="O arquivo substituirá todos os lançamentos e parâmetros atuais. Essa ação não pode ser desfeita. Exporte os dados atuais antes de continuar."
-        label="Restaurar backup"
-        onConfirm={async () => {
-          await p.restore(backup);
-          setBackup(null);
-        }}
       />
     </>
   );
