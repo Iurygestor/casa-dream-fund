@@ -6,6 +6,7 @@ import {
   Plus,
   Landmark,
   ChartNoAxesCombined,
+  CreditCard,
   Settings2,
   ArrowUpRight,
   ShieldCheck,
@@ -33,6 +34,7 @@ import { toast } from "sonner";
 const navigation = [
   { to: "/", label: "Início", icon: Home },
   { to: "/lancar", label: "Lançar", icon: Plus },
+  { to: "/faturas", label: "Faturas", icon: CreditCard },
   { to: "/reserva", label: "Reserva", icon: Landmark },
   { to: "/projecao", label: "Projeção", icon: ChartNoAxesCombined },
   { to: "/ajustes", label: "Ajustes", icon: Settings2 },
