@@ -22,10 +22,10 @@ import {
 import { pageHead } from "@/lib/metadata";
 import { toast } from "sonner";
 export const Route = createFileRoute("/lancar")({
-  validateSearch: (s: Record<string, unknown>): { type?: TransactionType } => {
+  validateSearch: (s: Record<string, unknown>): { type?: TransactionType; receivable?: boolean } => {
     const t = s["type"];
     return typeof t === "string" && types.includes(t as TransactionType)
-      ? { type: t as TransactionType }
+      ? { type: t as TransactionType, receivable: s["receivable"] === true }
       : {};
   },
   head: () =>
@@ -34,13 +34,13 @@ export const Route = createFileRoute("/lancar")({
 });
 function Launch() {
   const search = Route.useSearch();
-  return <LaunchForm key={search.type ?? "despesa"} initialType={search.type ?? "despesa"} />;
+  return <LaunchForm key={`${search.type ?? "despesa"}-${search.receivable ? "receivable" : "normal"}`} initialType={search.type ?? "despesa"} initialReceivable={search.receivable ?? false} />;
 }
-function LaunchForm({ initialType }: { initialType: TransactionType }) {
+function LaunchForm({ initialType, initialReceivable }: { initialType: TransactionType; initialReceivable: boolean }) {
   const p = usePlan(),
     navigate = useNavigate();
   const [type, setType] = useState<TransactionType>(initialType),
-    [isReceivable, setIsReceivable] = useState(false),
+    [isReceivable, setIsReceivable] = useState(initialReceivable),
     [amount, setAmount] = useState(""),
     [date, setDate] = useState(isoDate()),
     [category, setCategory] = useState<(typeof categories)[number]>("Aluguel"),
@@ -103,8 +103,8 @@ function LaunchForm({ initialType }: { initialType: TransactionType }) {
                     <Button
                       key={t}
                       type="button"
-                      aria-pressed={type === t}
-                      variant={type === t ? "default" : "outline"}
+                      aria-pressed={type === t && !isReceivable}
+                      variant={type === t && !isReceivable ? "default" : "outline"}
                       onClick={() => { setType(t); setIsReceivable(false); }}
                     >
                       <Icon />
