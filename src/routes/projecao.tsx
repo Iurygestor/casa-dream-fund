@@ -214,7 +214,10 @@ function ProjectionView() {
         ? forecastExpenses
         : pastData?.expenses ?? 0;
       const deposits = future
-        ? (month >= p.settings.deposit_start ? simulatedDeposit : 0)
+        ? (month >= p.settings.deposit_start ? simulatedDeposit : 0) +
+          (month === shiftMonth(currentMonth, 1)
+            ? Math.max(0, plannedDeposit(currentMonth, p.settings) - (actualMonthly.get(currentMonth)?.deposits ?? 0))
+            : 0)
         : pastData?.deposits ?? 0;
       const withdrawals = future ? 0 : pastData?.withdrawals ?? 0;
       const balance = income - expenses;
@@ -225,7 +228,10 @@ function ProjectionView() {
         else reserve = currentProjection.realNow;
       } else {
         const days = new Date(Number(month.slice(0, 4)), Number(month.slice(5, 7)), 0).getDate();
-        reserve = reserve * Math.pow(1 + p.settings.daily_rate / 100, days) + deposits - withdrawals;
+        const currentMonthRemainder = month === shiftMonth(currentMonth, 1)
+          ? dayDifference(todayIso, monthEnd(currentMonth))
+          : 0;
+        reserve = reserve * Math.pow(1 + p.settings.daily_rate / 100, days + currentMonthRemainder) + deposits - withdrawals;
         accumulatedOutsideReserve += income - expenses - deposits + withdrawals;
       }
       const wealth = reserve + accumulatedOutsideReserve + (future ? 0 : 0);
