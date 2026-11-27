@@ -52,7 +52,7 @@ const csvCell = (value: unknown) => {
   return /[;"\n\r]/.test(text) ? '"' + text.replace(/"/g, '""') + '"' : text;
 };
 export function createCsv(settings: Settings, transactions: Transaction[], budgets: CsvBudget[]) {
-  const rows: unknown[][] = [csvHeaders];
+  const rows: unknown[][] = [[...csvHeaders]];
   rows.push(["CONFIGURACAO", settings.initial_balance, settings.initial_date, settings.daily_rate, settings.monthly_deposit, settings.deposit_start, settings.fgts, settings.goal ?? ""]);
   for (const transaction of transactions) rows.push([
     "LANCAMENTO", "", "", "", "", "", "", "", transaction.date, transaction.type,
