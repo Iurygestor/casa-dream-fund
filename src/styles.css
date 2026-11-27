@@ -3320,3 +3320,29 @@ h1 {
   }
 }
 
+/* Delete action for confirmed monthly expenses */
+.month-payment-row {
+  gap: 12px;
+}
+.month-payment-row > button {
+  flex: none;
+  width: 34px;
+  height: 34px;
+  color: var(--muted-foreground);
+  border-radius: 9px;
+}
+.month-payment-row > button:hover {
+  color: var(--destructive);
+  background: var(--muted);
+}
+@media (max-width: 600px) {
+  .month-payment-row {
+    gap: 8px;
+    padding-inline: 10px;
+  }
+  .month-payment-row > button {
+    width: 32px;
+    height: 34px;
+  }
+}
+
