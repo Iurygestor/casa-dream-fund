@@ -17,8 +17,14 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { LockKeyhole, Mail, ArrowRight } from "lucide-react";
 
+type MonthlyBudget = {
+  month: string;
+  planned_income: number;
+  planned_expenses: Record<string, number>;
+};
 type PlanContext = {
   user: User | null;
+  budgets: MonthlyBudget[];
   authLoading: boolean;
   settings: Settings;
   transactions: Transaction[];
@@ -81,13 +87,25 @@ export function PlanProvider({ children }: { children: ReactNode }) {
     enabled: !!user,
     queryFn: async () => {
       if (!user)
-        return { settings: defaults(), transactions: [] as Transaction[], displayName: "" };
-      const [settingsResult, profileResult] = await Promise.all([
+        return { settings: defaults(), transactions: [] as Transaction[], budgets: [] as MonthlyBudget[], displayName: "" };
+      const [settingsResult, profileResult, budgetsResult] = await Promise.all([
         supabase.from("plan_settings").select("*").eq("user_id", user.id).maybeSingle(),
         supabase.from("profiles").select("display_name").eq("id", user.id).single(),
+        (supabase.from("monthly_budgets" as any) as any)
+          .select("month,planned_income,planned_expenses")
+          .eq("user_id", user.id)
+          .order("month"),
       ]);
       if (settingsResult.error) throw settingsResult.error;
       if (profileResult.error) throw profileResult.error;
+      if (budgetsResult.error) throw budgetsResult.error;
+      const budgets: MonthlyBudget[] = (budgetsResult.data ?? []).map((row: any) => ({
+        month: row.month,
+        planned_income: Number(row.planned_income),
+        planned_expenses: Object.fromEntries(
+          Object.entries(row.planned_expenses ?? {}).map(([key, value]) => [key, Number(value)]),
+        ),
+      }));
       const transactions: Transaction[] = [];
       for (let offset = 0; ; offset += 1000) {
         const result = await supabase
@@ -108,6 +126,7 @@ export function PlanProvider({ children }: { children: ReactNode }) {
       return {
         settings: settingsResult.data ? settingsSchema.parse(settingsResult.data) : defaults(),
         transactions,
+        budgets,
         displayName: profileResult.data.display_name,
       };
     },
@@ -215,6 +234,7 @@ export function PlanProvider({ children }: { children: ReactNode }) {
         authLoading,
         settings: query.data?.settings ?? defaults(),
         transactions: query.data?.transactions ?? [],
+        budgets: query.data?.budgets ?? [],
         displayName: query.data?.displayName ?? "",
         loading: !!user && query.isPending,
         error: !!user && query.isError,

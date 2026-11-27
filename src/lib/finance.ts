@@ -52,12 +52,12 @@ export const settingsSchema = z.object({
 });
 export type Settings = z.infer<typeof settingsSchema>;
 export const defaults = (today = isoDate()): Settings => ({
-  initial_balance: 9808.96,
+  initial_balance: 0,
   initial_date: today,
-  daily_rate: 0.0568,
-  monthly_deposit: 800,
-  deposit_start: "2027-01",
-  fgts: 6565.52,
+  daily_rate: 0,
+  monthly_deposit: 0,
+  deposit_start: today.slice(0, 7),
+  fgts: 0,
   goal: null,
 });
 export const transactionSchema = z
@@ -109,21 +109,13 @@ export const monthEnd = (month: string) => {
 };
 export const plannedDeposit = (month: string, s: Settings) =>
   month >= s.deposit_start ? s.monthly_deposit : 0;
-export function budget(month: string, s: Settings) {
-  const income = month === "2026-12" ? 3412.4 : month >= "2027-01" ? 4000 : 0;
-  const expenses =
-    month === "2026-12"
-      ? 3428.41
-      : month === "2027-01"
-        ? 2714.21
-        : ["2027-02", "2027-03"].includes(month)
-          ? 2496.79
-          : month === "2027-04"
-            ? 2324.04
-            : month >= "2027-05"
-              ? 2205.92
-              : 0;
-  const deposit = month === "2026-12" ? 0 : plannedDeposit(month, s);
+export function budget(
+  month: string,
+  s: Settings,
+  income = 0,
+  expenses = 0,
+) {
+  const deposit = plannedDeposit(month, s);
   return { income, expenses, deposit, remaining: income - expenses - deposit };
 }
 export function monthlyTotals(transactions: Transaction[], month: string) {
@@ -169,31 +161,6 @@ export function reserveBalance(s: Settings, rows: Transaction[], until = isoDate
   }
   return balance * Math.pow(1 + s.daily_rate / 100, dayDifference(cursor, until));
 }
-export const referenceCategories = (month: string) =>
-  month >= "2027-01"
-    ? [
-        ["Aluguel", 840],
-        ["Alimentação", 500],
-        [
-          "Fatura C6",
-          month === "2027-01"
-            ? 698.16
-            : ["2027-02", "2027-03"].includes(month)
-              ? 480.74
-              : month === "2027-04"
-                ? 307.99
-                : 189.87,
-        ],
-        ["Academia", 190],
-        ["Faculdade", 160],
-        ["Manutenção", 100],
-        ["Gasolina", 100],
-        ["DAS", 86.05],
-        ["Internet", 40],
-      ]
-        .map(([category, amount]) => ({ category: String(category), amount: Number(amount) }))
-        .sort((a, b) => b.amount - a.amount)
-    : [];
 export function projection(s: Settings, rows: Transaction[], simulated: number, today = isoDate()) {
   const currentMonth = today.slice(0, 7),
     realNow = reserveBalance(s, rows, today) ?? s.initial_balance;
