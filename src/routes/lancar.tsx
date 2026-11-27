@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
-import { ArrowRight, Check, CalendarDays } from "lucide-react";
+import { ArrowRight, Check, CalendarDays, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { usePlan } from "@/components/plan/provider";
 import {
@@ -17,6 +17,7 @@ import {
   parseDecimal,
   transactionSchema,
   type TransactionType,
+  RECEIVABLE_PREFIX,
 } from "@/lib/finance";
 import { pageHead } from "@/lib/metadata";
 import { toast } from "sonner";
@@ -39,6 +40,7 @@ function LaunchForm({ initialType }: { initialType: TransactionType }) {
   const p = usePlan(),
     navigate = useNavigate();
   const [type, setType] = useState<TransactionType>(initialType),
+    [isReceivable, setIsReceivable] = useState(false),
     [amount, setAmount] = useState(""),
     [date, setDate] = useState(isoDate()),
     [category, setCategory] = useState<(typeof categories)[number]>("Aluguel"),
@@ -56,7 +58,7 @@ function LaunchForm({ initialType }: { initialType: TransactionType }) {
       type,
       amount: parseDecimal(amount),
       category: type === "despesa" ? category : null,
-      description,
+      description: isReceivable ? RECEIVABLE_PREFIX + description.trim() : description,
     });
     if (!result.success) {
       toast.error("Informe uma data válida e um valor maior que zero.");
@@ -103,15 +105,25 @@ function LaunchForm({ initialType }: { initialType: TransactionType }) {
                       type="button"
                       aria-pressed={type === t}
                       variant={type === t ? "default" : "outline"}
-                      onClick={() => setType(t)}
+                      onClick={() => { setType(t); setIsReceivable(false); }}
                     >
                       <Icon />
                       {typeLabels[t]}
                     </Button>
                   );
                 })}
+                <Button
+                  type="button"
+                  aria-pressed={isReceivable}
+                  variant={isReceivable ? "default" : "outline"}
+                  onClick={() => { setType("recebimento"); setIsReceivable(true); }}
+                >
+                  <Clock />
+                  A receber
+                </Button>
               </div>
             </div>
+            {isReceivable && <p className="subtle-note receivable-form-note">Este valor ficará como pendente e só entrará nas receitas quando você marcar como recebido.</p>}
             <div className="field-grid">
               <label>
                 Valor
@@ -198,7 +210,7 @@ function LaunchForm({ initialType }: { initialType: TransactionType }) {
                 onChange={(e) => setDescription(e.target.value)}
                 maxLength={500}
                 placeholder={
-                  type === "despesa" ? "Ex.: aluguel de dezembro" : "Ex.: um passo para a casa nova"
+                  type === "despesa" ? "Ex.: aluguel de dezembro" : isReceivable ? "Ex.: salário, venda ou valor combinado" : "Ex.: um passo para a casa nova"
                 }
               />
             </label>
@@ -229,7 +241,9 @@ function LaunchForm({ initialType }: { initialType: TransactionType }) {
               ? "Retiradas reduzem a reserva, mas não entram no cálculo da sobra do mês."
               : type === "aporte"
                 ? "O aporte é um depósito real na sua reserva, separado do valor planejado."
-                : "Receitas incluem os recebimentos e os bônus do mês."}
+                : isReceivable
+                  ? "Contas a receber ficam pendentes e não entram no saldo até serem recebidas."
+                  : "Receitas incluem os recebimentos e os bônus do mês."}
           </p>
         </section>
       </div>
