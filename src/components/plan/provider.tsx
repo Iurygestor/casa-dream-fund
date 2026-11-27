@@ -63,6 +63,7 @@ type PlanContext = {
     payment?: { method: "credit_card"; cardId: string; installments: number },
   ) => Promise<boolean>;
   remove: (id: string) => Promise<void>;
+  removeBudgetCategory: (month: string, category: string) => Promise<void>;
   clear: () => Promise<void>;
   saveSettings: (s: Settings, name: string) => Promise<boolean>;
   restore: (value: unknown) => Promise<void>;
@@ -269,6 +270,33 @@ export function PlanProvider({ children }: { children: ReactNode }) {
     await invalidate();
     toast.success("Lançamento excluído");
   };
+  const removeBudgetCategory = async (month: string, category: string) => {
+    const account = requireUser();
+    if (!account) return;
+    try {
+      const current = query.data?.budgets.find((item) => item.month === month);
+      if (!current || !(category in current.planned_expenses)) {
+        throw new Error("Despesa não encontrada neste orçamento.");
+      }
+      const plannedExpenses = { ...current.planned_expenses };
+      delete plannedExpenses[category];
+      const { error } = await (supabase.from("monthly_budgets" as any) as any)
+        .upsert({
+          user_id: account.id,
+          month,
+          planned_income: current.planned_income,
+          planned_expenses: plannedExpenses,
+          planned_income_sources: current.planned_income_sources,
+          updated_at: new Date().toISOString(),
+        }, { onConflict: "user_id,month" });
+      if (error) throw error;
+      await invalidate();
+      toast.success("Despesa removida do orçamento");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Não foi possível excluir a despesa.");
+      throw error;
+    }
+  };
   const clear = async () => {
     const account = requireUser();
     if (!account) return;
@@ -384,6 +412,7 @@ export function PlanProvider({ children }: { children: ReactNode }) {
         },
         add,
         remove,
+        removeBudgetCategory,
         clear,
         saveSettings,
         restore,
