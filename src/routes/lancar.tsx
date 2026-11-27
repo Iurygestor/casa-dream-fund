@@ -75,7 +75,7 @@ function LaunchForm({ initialType }: { initialType: TransactionType }) {
     const saved = await p.add(
       result.data,
       depositBonus,
-      paymentMethod === "credit_card"
+      type === "despesa" && paymentMethod === "credit_card"
         ? { method: "credit_card", cardId: selectedCardId, installments: installmentCount }
         : undefined,
     );
