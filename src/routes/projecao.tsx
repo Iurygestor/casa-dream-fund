@@ -26,6 +26,7 @@ import {
   monthlyTotals,
   reserveBalance,
   plannedDeposit,
+  dayDifference,
   type Transaction,
 } from "@/lib/finance";
 import { pageHead } from "@/lib/metadata";
@@ -90,6 +91,19 @@ function ProjectionView() {
     [p.settings, p.transactions, todayIso],
   );
   const simulated12 = currentProjection.milestones.find((item) => item.months === 12)?.estimate ?? currentProjection.realNow;
+  const originalAtToday = (() => {
+    let balance = p.settings.initial_balance;
+    let cursor = p.settings.initial_date;
+    for (let month = p.settings.initial_date.slice(0, 7); month <= currentMonth; month = shiftMonth(month, 1)) {
+      const depositDate = monthEnd(month);
+      if (month >= p.settings.deposit_start && depositDate <= todayIso) {
+        balance *= Math.pow(1 + p.settings.daily_rate / 100, dayDifference(cursor, depositDate));
+        balance += p.settings.monthly_deposit;
+        cursor = depositDate;
+      }
+    }
+    return balance * Math.pow(1 + p.settings.daily_rate / 100, dayDifference(cursor, todayIso));
+  })();
   const simulated60 = currentProjection.milestones.find((item) => item.months === 60)?.estimate ?? currentProjection.realNow;
   const base60 = baseProjection.milestones.find((item) => item.months === 60)?.estimate ?? baseProjection.realNow;
 
@@ -189,13 +203,14 @@ function ProjectionView() {
         accumulatedOutsideReserve += income - expenses - deposits + withdrawals;
         const end = monthEnd(month);
         if (month < currentMonth) reserve = reserveBalance(p.settings, p.transactions, end) ?? reserve;
+        else reserve = currentProjection.realNow;
       } else {
         const days = new Date(Number(month.slice(0, 4)), Number(month.slice(5, 7)), 0).getDate();
         reserve = reserve * Math.pow(1 + p.settings.daily_rate / 100, days) + deposits - withdrawals;
         accumulatedOutsideReserve += income - expenses - deposits + withdrawals;
       }
       const wealth = reserve + accumulatedOutsideReserve + (future ? 0 : 0);
-      const hasData = !!pastData || !!budget || monthInvoices.length > 0;
+      const hasData = !!pastData || !!budget || monthInvoices.length > 0 || forecastRows.averageIncome > 0 || forecastRows.recurringExpenses.size > 0;
       rows.push({
         month, income: future ? 0 : income, expenses: future ? 0 : expenses, balance: future ? 0 : balance,
         wealth: future ? 0 : wealth,
@@ -225,7 +240,7 @@ function ProjectionView() {
     return [...historical, ...future];
   }, [currentMonth, currentProjection, p.settings, p.transactions, rangeStart, rangeEnd]);
 
-  const reserveDifference = currentProjection.realNow - (currentProjection.points.find((point) => point.month === currentMonth)?.plan ?? currentProjection.points[0]?.plan ?? p.settings.initial_balance);
+  const reserveDifference = currentProjection.realNow - originalAtToday;
   const selectedBudget = p.budgets.find((item) => item.month === budgetMonth);
   const selectedTransactions = p.transactions.filter((transaction) => monthKey(transaction.date) === budgetMonth);
   const selectedTotals = monthlyTotals(p.transactions, budgetMonth);
