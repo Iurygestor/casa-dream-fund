@@ -12,6 +12,7 @@ import {
   CalendarDays,
   House,
   CircleHelp,
+  CheckCircle2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { usePlan } from "@/components/plan/provider";
@@ -31,6 +32,7 @@ import {
   monthSchema,
   shiftMonth,
   reserveBalance,
+  categories,
 } from "@/lib/finance";
 import { pageHead } from "@/lib/metadata";
 export const Route = createFileRoute("/")({
@@ -51,6 +53,18 @@ function Index() {
     navigate = Route.useNavigate(),
     month = search.month ?? "2026-12";
   const [categoryMode, setCategoryMode] = useState<"real" | "plan">("real");
+  const [confirmingBudgetItem, setConfirmingBudgetItem] = useState<string | null>(null);
+  const budgetDate = month + "-01";
+  const budgetDescription = (label: string) => "Orçamento confirmado: " + label;
+  const isBudgetConfirmed = (kind: "recebimento" | "despesa", label: string, amount: number) =>
+    p.transactions.some((transaction) => transaction.type === kind && transaction.date === budgetDate && transaction.amount === amount && transaction.description === budgetDescription(label));
+  const confirmBudgetItem = async (kind: "recebimento" | "despesa", label: string, amount: number) => {
+    const key = kind + ":" + label;
+    if (amount <= 0 || isBudgetConfirmed(kind, label, amount)) return;
+    setConfirmingBudgetItem(key);
+    await p.add({ date: budgetDate, type: kind, amount, category: kind === "despesa" ? (label as (typeof categories)[number]) : null, description: budgetDescription(label) }, false);
+    setConfirmingBudgetItem(null);
+  };
   const totals = monthlyTotals(p.transactions, month),
     monthlyPlan = p.budgets.find((item) => item.month === month),
     plannedIncome = monthlyPlan?.planned_income ?? 0,
@@ -297,6 +311,13 @@ function Index() {
                 <div className="budget-line" key={origin}>
                   <span>{origin}</span>
                   <strong>{money(amount)}</strong>
+                  {isBudgetConfirmed("recebimento", origin, amount) ? (
+                    <span className="text-income inline-flex items-center gap-1 text-xs"><CheckCircle2 size={14} /> Confirmada</span>
+                  ) : (
+                    <Button size="sm" variant="outline" disabled={confirmingBudgetItem !== null} onClick={() => void confirmBudgetItem("recebimento", origin, amount)}>
+                      {confirmingBudgetItem === "recebimento:" + origin ? "Salvando…" : "Confirmar"}
+                    </Button>
+                  )}
                 </div>
               ))
             ) : (
@@ -310,6 +331,13 @@ function Index() {
               <div className="budget-line" key={category}>
                 <span>{category}</span>
                 <strong>{money(amount)}</strong>
+                {isBudgetConfirmed("despesa", category, amount) ? (
+                  <span className="text-income inline-flex items-center gap-1 text-xs"><CheckCircle2 size={14} /> Confirmada</span>
+                ) : (
+                  <Button size="sm" variant="outline" disabled={confirmingBudgetItem !== null} onClick={() => void confirmBudgetItem("despesa", category, amount)}>
+                    {confirmingBudgetItem === "despesa:" + category ? "Salvando…" : "Confirmar"}
+                  </Button>
+                )}
               </div>
             ))}
             <div className="budget-line">
