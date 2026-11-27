@@ -18,6 +18,7 @@ import { usePlan } from "@/components/plan/provider";
 import { PageHeading, Confirm, CloudNotice } from "@/components/plan/shared";
 import { parseDecimal, settingsSchema, backupSchema, isoDate, type Settings } from "@/lib/finance";
 import { pageHead } from "@/lib/metadata";
+import { createCsv, parseCsvImport, type CsvImportData } from "@/lib/csv";
 import { toast } from "sonner";
 export const Route = createFileRoute("/ajustes")({
   head: () =>
@@ -36,6 +37,7 @@ function SettingsPage() {
 function SettingsForm() {
   const p = usePlan(),
     fileInput = useRef<HTMLInputElement>(null),
+    csvInput = useRef<HTMLInputElement>(null),
     [name, setName] = useState(p.displayName),
     [fields, setFields] = useState<Record<keyof Settings, string>>({
       initial_balance: String(p.settings.initial_balance).replace(".", ","),
@@ -48,7 +50,9 @@ function SettingsForm() {
     }),
     [busy, setBusy] = useState(false),
     [clearOpen, setClearOpen] = useState(false),
-    [backup, setBackup] = useState<unknown>(null);
+    [backup, setBackup] = useState<unknown>(null),
+    [csvPreview, setCsvPreview] = useState<CsvImportData | null>(null),
+    [csvBusy, setCsvBusy] = useState(false);
   const set = (key: keyof Settings, value: string) => setFields((f) => ({ ...f, [key]: value }));
   async function save(e: React.FormEvent) {
     e.preventDefault();
@@ -99,6 +103,46 @@ function SettingsForm() {
     a.click();
     URL.revokeObjectURL(url);
     toast.success("Backup exportado");
+  }
+  function downloadCsv(content: string, filename: string) {
+    const url = URL.createObjectURL(new Blob([content], { type: "text/csv;charset=utf-8" }));
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+  function downloadCsvTemplate() {
+    downloadCsv(createCsv({
+      initial_balance: 0, initial_date: isoDate(), daily_rate: 0,
+      monthly_deposit: 0, deposit_start: isoDate().slice(0, 7), fgts: 0, goal: null,
+    }, [], []), "modelo-plano-casa.csv");
+  }
+  function exportCsv() {
+    if (!p.user) { p.setAuthOpen(true); return; }
+    downloadCsv(createCsv(p.settings, p.transactions, p.budgets), `plano-casa-${isoDate()}.csv`);
+    toast.success("Planilha CSV exportada");
+  }
+  async function readCsv(file: File | undefined) {
+    if (!file) return;
+    try {
+      const parsed = parseCsvImport(await file.text());
+      setCsvPreview(parsed);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Não foi possível ler o CSV.");
+    }
+    if (csvInput.current) csvInput.current.value = "";
+  }
+  async function confirmCsvImport() {
+    if (!csvPreview) return;
+    setCsvBusy(true);
+    try {
+      const result = await p.importCsv(csvPreview);
+      toast.success(`Importação concluída: ${result.inserted} lançamentos novos; ${result.duplicates} duplicados ignorados.`);
+      setCsvPreview(null);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Falha ao importar a planilha.");
+    } finally { setCsvBusy(false); }
   }
   async function importFile(file: File | undefined) {
     if (!file) return;
