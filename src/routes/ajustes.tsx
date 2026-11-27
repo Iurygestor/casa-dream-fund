@@ -113,7 +113,7 @@ function SettingsForm() {
     URL.revokeObjectURL(url);
   }
   function downloadCsvTemplate() {
-    downloadCsv("\\uFEFF" + csvHeaders.join(";") + "\\r\\n", "modelo-plano-casa.csv");
+    downloadCsv("\uFEFF" + csvHeaders.join(";") + "\r\n", "modelo-plano-casa.csv");
   }
   function exportCsv() {
     if (!p.user) { p.setAuthOpen(true); return; }
