@@ -90,9 +90,19 @@ function ProjectionView() {
     [p.settings, p.transactions, todayIso],
   );
   const simulated12 = currentProjection.milestones.find((item) => item.months === 12)?.estimate ?? currentProjection.realNow;
-  const base12 = baseProjection.milestones.find((item) => item.months === 12)?.estimate ?? baseProjection.realNow;
   const simulated60 = currentProjection.milestones.find((item) => item.months === 60)?.estimate ?? currentProjection.realNow;
   const base60 = baseProjection.milestones.find((item) => item.months === 60)?.estimate ?? baseProjection.realNow;
+
+  const firstTransactionMonth = p.transactions.length
+    ? p.transactions.reduce((earliest, transaction) => monthKey(transaction.date) < earliest ? monthKey(transaction.date) : earliest, currentMonth)
+    : currentMonth;
+  const firstBudgetMonth = p.budgets.length
+    ? p.budgets.reduce((earliest, budget) => budget.month < earliest ? budget.month : earliest, currentMonth)
+    : currentMonth;
+  const firstAvailableMonth = firstTransactionMonth < firstBudgetMonth ? firstTransactionMonth : firstBudgetMonth;
+  const periodCount = period === "6M" ? 6 : period === "12M" ? 12 : period === "3A" ? 36 : 60;
+  const rangeStart = period === "Tudo" ? firstAvailableMonth : shiftMonth(currentMonth, -Math.floor((periodCount - 1) / 2));
+  const rangeEnd = period === "Tudo" ? shiftMonth(currentMonth, 60) : shiftMonth(currentMonth, Math.ceil((periodCount - 1) / 2));
 
   const actualMonthly = useMemo(() => {
     const result = new Map<string, { income: number; expenses: number; deposits: number; withdrawals: number }>();
@@ -148,14 +158,11 @@ function ProjectionView() {
 
   const overviewData = useMemo(() => {
     const rows: OverviewPoint[] = [];
-    const firstMonth = p.transactions.length
-      ? p.transactions.reduce((earliest, transaction) => monthKey(transaction.date) < earliest ? monthKey(transaction.date) : earliest, currentMonth)
-      : currentMonth;
-    const periodMonths = period === "6M" ? 6 : period === "12M" ? 12 : period === "3A" ? 36 : period === "5A" ? 60 : Math.max(12, Math.min(120, Math.round((new Date(currentMonth + "-01").getTime() - new Date(firstMonth + "-01").getTime()) / (30.44 * 86400000)) + 60));
-    const start = period === "Tudo" ? firstMonth : shiftMonth(currentMonth, -(periodMonths - 1));
+    const monthIndex = (month: string) => Number(month.slice(0, 4)) * 12 + Number(month.slice(5, 7));
+    const periodMonths = period === "Tudo" ? monthIndex(currentMonth) - monthIndex(firstAvailableMonth) + 61 : periodCount;
     let accumulatedOutsideReserve = 0;
     let reserve = reserveBalance(p.settings, p.transactions, todayIso) ?? p.settings.initial_balance;
-    for (let month = start, index = 0; index < periodMonths + 60; month = shiftMonth(month, 1), index++) {
+    for (let month = rangeStart, index = 0; index < periodMonths; month = shiftMonth(month, 1), index++) {
       const future = month > currentMonth;
       const pastData = actualMonthly.get(month);
       const budget = p.budgets.find((item) => item.month === month);
@@ -174,7 +181,7 @@ function ProjectionView() {
         ? forecastExpenses
         : pastData?.expenses ?? 0;
       const deposits = future
-        ? plannedDeposit(month, p.settings)
+        ? (month >= p.settings.deposit_start ? simulatedDeposit : 0)
         : pastData?.deposits ?? 0;
       const withdrawals = future ? 0 : pastData?.withdrawals ?? 0;
       const balance = income - expenses;
@@ -199,38 +206,39 @@ function ProjectionView() {
         reserve, isFuture: future, hasData,
       });
     }
-    return rows.filter((row) => row.month >= start && row.month <= shiftMonth(currentMonth, periodMonths - 1));
-  }, [period, currentMonth, todayIso, p.transactions, p.budgets, p.creditCardInvoices, p.settings, actualMonthly, forecastRows]);
+    return rows.filter((row) => row.month >= rangeStart && row.month <= rangeEnd);
+  }, [period, currentMonth, todayIso, p.transactions, p.budgets, p.creditCardInvoices, p.settings, actualMonthly, forecastRows, firstAvailableMonth, periodCount, rangeStart, rangeEnd, simulatedDeposit]);
 
   const reserveChartData = useMemo(() => {
-    const opening = {
-      month: currentMonth,
-      plan: null as number | null,
-      realized: currentProjection.realNow,
-      future: currentProjection.realNow,
-    };
-    return [opening, ...currentProjection.points.map((point) => ({
-      month: point.month,
-      plan: point.plan,
-      realized: point.month < currentMonth ? point.actual : null,
-      future: point.month >= currentMonth ? point.future : null,
-    }))];
-  }, [currentMonth, currentProjection]);
+    const historical: Array<{ month: string; plan: number | null; realized: number | null; future: number | null }> = [];
+    for (let month = rangeStart; month <= currentMonth; month = shiftMonth(month, 1)) {
+      historical.push({
+        month,
+        plan: currentProjection.points.find((point) => point.month === month)?.plan ?? null,
+        realized: month === currentMonth ? currentProjection.realNow : reserveBalance(p.settings, p.transactions, monthEnd(month)),
+        future: month === currentMonth ? currentProjection.realNow : null,
+      });
+    }
+    const future = currentProjection.points
+      .filter((point) => point.month > currentMonth && point.month <= rangeEnd)
+      .map((point) => ({ month: point.month, plan: point.plan, realized: null, future: point.future }));
+    return [...historical, ...future];
+  }, [currentMonth, currentProjection, p.settings, p.transactions, rangeStart, rangeEnd]);
 
-  const reserveDifference = currentProjection.realNow - (currentProjection.points.find((point) => point.month === currentMonth)?.plan ?? p.settings.initial_balance);
+  const reserveDifference = currentProjection.realNow - (currentProjection.points.find((point) => point.month === currentMonth)?.plan ?? currentProjection.points[0]?.plan ?? p.settings.initial_balance);
   const selectedBudget = p.budgets.find((item) => item.month === budgetMonth);
   const selectedTransactions = p.transactions.filter((transaction) => monthKey(transaction.date) === budgetMonth);
   const selectedTotals = monthlyTotals(p.transactions, budgetMonth);
   const selectedInvoices = p.creditCardInvoices.filter((invoice) => invoice.due_date.slice(0, 7) === budgetMonth && invoice.status !== "paid");
   const invoiceOutstanding = sum(selectedInvoices.map((invoice) => Math.max(0, invoice.total_amount - invoice.paid_amount)));
-  const plannedIncome = selectedBudget?.planned_income ?? selectedTotals.income;
+  const plannedIncome = selectedBudget?.planned_income ?? (budgetMonth > currentMonth ? selectedMonthOverview?.projectedIncome ?? 0 : selectedTotals.income);
   const plannedExpenseEntries = Object.entries(selectedBudget?.planned_expenses ?? {});
   const actualExpenseEntries = Object.entries(selectedTransactions.filter((transaction) => transaction.type === "despesa").reduce<Record<string, number>>((acc, transaction) => {
     const category = transaction.category ?? "Outros";
     acc[category] = (acc[category] ?? 0) + transaction.amount;
     return acc;
   }, {}));
-  const expenseEntries = plannedExpenseEntries.length ? plannedExpenseEntries : actualExpenseEntries;
+  const expenseEntries = selectedBudget ? plannedExpenseEntries : budgetMonth > currentMonth ? [...forecastRows.recurringExpenses.entries()] : actualExpenseEntries;
   const expenseTotal = expenseEntries.reduce((total, [, value]) => total + value, 0);
   const previousMonth = shiftMonth(budgetMonth, -1);
   const previousBudget = p.budgets.find((item) => item.month === previousMonth);
@@ -241,6 +249,7 @@ function ProjectionView() {
     : previousTotals.expenses;
   const incomeChange = previousIncome > 0 ? ((plannedIncome - previousIncome) / previousIncome) * 100 : null;
   const expenseChange = previousExpenses > 0 ? ((expenseTotal - previousExpenses) / previousExpenses) * 100 : null;
+
   const selectedMonthOverview = overviewData.find((row) => row.month === budgetMonth);
 
   const goalMonthsSaved = (() => {
