@@ -9,6 +9,8 @@ import {
   Check,
   Circle,
   Plus,
+  TrendingUp,
+  TrendingDown,
   Wallet,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -184,6 +186,19 @@ function Index() {
           </div>
         }
       />
+
+      <section className="quick-launch-actions" aria-label="Atalhos de lançamento">
+        <Link to="/lancar" search={{ type: "receita" }} className="quick-launch-card quick-launch-income">
+          <span className="quick-launch-icon"><TrendingUp size={19} /></span>
+          <span><strong>Nova receita</strong><small>Registrar dinheiro que entrou</small></span>
+          <ArrowUpRight size={17} className="quick-launch-arrow" />
+        </Link>
+        <Link to="/lancar" search={{ type: "despesa" }} className="quick-launch-card quick-launch-expense">
+          <span className="quick-launch-icon"><TrendingDown size={19} /></span>
+          <span><strong>Nova despesa</strong><small>Registrar um pagamento ou compra</small></span>
+          <ArrowUpRight size={17} className="quick-launch-arrow" />
+        </Link>
+      </section>
 
       <div className="dashboard-grid dashboard-top month-highlight-grid">
         <section className="balance-card month-balance-card">
