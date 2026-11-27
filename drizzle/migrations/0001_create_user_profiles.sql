@@ -1,0 +1,10 @@
+CREATE TABLE public.profiles (id uuid PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE, display_name text NOT NULL DEFAULT '');
+GRANT SELECT, UPDATE ON public.profiles TO authenticated;
+GRANT ALL ON public.profiles TO service_role;
+ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
+CREATE POLICY own_profile_read ON public.profiles FOR SELECT TO authenticated USING ((select auth.uid()) = id);
+CREATE POLICY own_profile_update ON public.profiles FOR UPDATE TO authenticated USING ((select auth.uid()) = id) WITH CHECK ((select auth.uid()) = id);
+CREATE FUNCTION public.create_house_profile() RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path = '' AS $$ BEGIN INSERT INTO public.profiles(id,display_name) VALUES(new.id,coalesce(new.raw_user_meta_data->>'display_name','')); RETURN new; END; $$;
+REVOKE EXECUTE ON FUNCTION public.create_house_profile() FROM PUBLIC, anon, authenticated;
+CREATE TRIGGER house_profile_on_signup AFTER INSERT ON auth.users FOR EACH ROW EXECUTE FUNCTION public.create_house_profile();
+INSERT INTO public.profiles(id) SELECT id FROM auth.users ON CONFLICT(id) DO NOTHING;

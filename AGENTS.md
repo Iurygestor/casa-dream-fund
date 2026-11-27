@@ -28,3 +28,10 @@ use the editor.
   own key and store it in Secrets.
 - **Secrets.** Lovable manages them. Do not put secret values in the repo.
 <!-- LOVABLE:END -->
+
+## App architecture
+- Keep financial rules in a pure, tested finance module; all screens must use the same calculation functions to avoid conflicting balances.
+- Public tab routes show defaults without a session, while user data loads only after a verified Cloud user; browser Data API reads and mutations are protected by owner-only RLS.
+- Keep one auth-state subscriber in the root provider; clear user-scoped query data on sign-out and refetch on identity changes.
+- Restore financial backups through a security-invoker database function so replacing settings and transactions is atomic and respects RLS.
+- Use manifest-only installation with no app-shell service worker because offline use was not requested.

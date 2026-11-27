@@ -10,33 +10,115 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AjustesRouteImport } from './routes/ajustes'
+import { Route as AuthRouteImport } from './routes/auth'
+import { Route as LancarRouteImport } from './routes/lancar'
+import { Route as ProjecaoRouteImport } from './routes/projecao'
+import { Route as ReservaRouteImport } from './routes/reserva'
+import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AjustesRoute = AjustesRouteImport.update({
+  id: '/ajustes',
+  path: '/ajustes',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LancarRoute = LancarRouteImport.update({
+  id: '/lancar',
+  path: '/lancar',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProjecaoRoute = ProjecaoRouteImport.update({
+  id: '/projecao',
+  path: '/projecao',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ReservaRoute = ReservaRouteImport.update({
+  id: '/reserva',
+  path: '/reserva',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ResetPasswordRoute = ResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/ajustes': typeof AjustesRoute
+  '/auth': typeof AuthRoute
+  '/lancar': typeof LancarRoute
+  '/projecao': typeof ProjecaoRoute
+  '/reserva': typeof ReservaRoute
+  '/reset-password': typeof ResetPasswordRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/ajustes': typeof AjustesRoute
+  '/auth': typeof AuthRoute
+  '/lancar': typeof LancarRoute
+  '/projecao': typeof ProjecaoRoute
+  '/reserva': typeof ReservaRoute
+  '/reset-password': typeof ResetPasswordRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/ajustes': typeof AjustesRoute
+  '/auth': typeof AuthRoute
+  '/lancar': typeof LancarRoute
+  '/projecao': typeof ProjecaoRoute
+  '/reserva': typeof ReservaRoute
+  '/reset-password': typeof ResetPasswordRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/ajustes'
+    | '/auth'
+    | '/lancar'
+    | '/projecao'
+    | '/reserva'
+    | '/reset-password'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/ajustes'
+    | '/auth'
+    | '/lancar'
+    | '/projecao'
+    | '/reserva'
+    | '/reset-password'
+  id:
+    | '__root__'
+    | '/'
+    | '/ajustes'
+    | '/auth'
+    | '/lancar'
+    | '/projecao'
+    | '/reserva'
+    | '/reset-password'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AjustesRoute: typeof AjustesRoute
+  AuthRoute: typeof AuthRoute
+  LancarRoute: typeof LancarRoute
+  ProjecaoRoute: typeof ProjecaoRoute
+  ReservaRoute: typeof ReservaRoute
+  ResetPasswordRoute: typeof ResetPasswordRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -48,11 +130,59 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/ajustes': {
+      id: '/ajustes'
+      path: '/ajustes'
+      fullPath: '/ajustes'
+      preLoaderRoute: typeof AjustesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/lancar': {
+      id: '/lancar'
+      path: '/lancar'
+      fullPath: '/lancar'
+      preLoaderRoute: typeof LancarRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/projecao': {
+      id: '/projecao'
+      path: '/projecao'
+      fullPath: '/projecao'
+      preLoaderRoute: typeof ProjecaoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reserva': {
+      id: '/reserva'
+      path: '/reserva'
+      fullPath: '/reserva'
+      preLoaderRoute: typeof ReservaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reset-password': {
+      id: '/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof ResetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AjustesRoute: AjustesRoute,
+  AuthRoute: AuthRoute,
+  LancarRoute: LancarRoute,
+  ProjecaoRoute: ProjecaoRoute,
+  ReservaRoute: ReservaRoute,
+  ResetPasswordRoute: ResetPasswordRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
