@@ -219,6 +219,10 @@ export function PlanProvider({ children }: { children: ReactNode }) {
       const { error } = await supabase.from("plan_settings").upsert({ ...settingsSchema.parse(data.settings), user_id: account.id });
       if (error) throw error;
     }
+    if (data.displayName !== undefined) {
+      const { error } = await supabase.from("profiles").update({ display_name: data.displayName.slice(0, 100) }).eq("id", account.id);
+      if (error) throw error;
+    }
     if (data.budgets.length) {
       const rows = data.budgets.map((b) => ({
         user_id: account.id, month: b.month, planned_income: b.planned_income,
