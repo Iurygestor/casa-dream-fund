@@ -1,14 +1,12 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import {
   ChevronLeft,
   ChevronRight,
   ArrowUpRight,
-  Landmark,
   House,
   CalendarDays,
   Check,
-  CheckCircle2,
   Circle,
   Plus,
   Wallet,
@@ -59,7 +57,6 @@ function Index() {
   const [billFilter, setBillFilter] = useState<BillFilter>("all");
   const [busyBill, setBusyBill] = useState<string | null>(null);
   const [bulkBusy, setBulkBusy] = useState(false);
-  const budgetDate = month + "-01";
   const monthlyPlan = p.budgets.find((item) => item.month === month);
   const plannedIncome = monthlyPlan?.planned_income ?? 0;
   const plannedCategories = Object.entries(monthlyPlan?.planned_expenses ?? {})
@@ -72,13 +69,11 @@ function Index() {
   const plannedExpenses = plannedCategories.reduce((sum, item) => sum + item.amount, 0);
   const monthInvoices = p.creditCardInvoices.filter((invoice) => invoice.reference_month.startsWith(month));
   const invoiceTotal = monthInvoices.reduce((sum, invoice) => sum + Math.max(0, invoice.total_amount - invoice.paid_amount), 0);
-  const bills = useMemo(() => {
-    const result: Bill[] = plannedCategories.map((item) => ({ ...item }));
-    if (invoiceTotal > 0 && !result.some((item) => item.category === "Fatura C6")) {
-      result.push({ category: "Fatura C6", amount: invoiceTotal, dueDate: monthInvoices.map((invoice) => invoice.due_date).sort()[0] });
-    }
-    return result.sort((a, b) => b.amount - a.amount);
-  }, [plannedCategories, invoiceTotal]);
+  const bills: Bill[] = plannedCategories.map((item) => ({ ...item }));
+  if (invoiceTotal > 0 && !bills.some((item) => item.category === "Fatura C6")) {
+    bills.push({ category: "Fatura C6", amount: invoiceTotal, dueDate: monthInvoices.map((invoice) => invoice.due_date).sort()[0] });
+  }
+  bills.sort((a, b) => b.amount - a.amount);
   const paymentTransactions = p.transactions.filter(
     (transaction) =>
       transaction.type === "despesa" &&
@@ -113,21 +108,23 @@ function Index() {
     setBusyBill(bill.category);
     const existing = paidByCategory.get(bill.category);
     const isSamePayment = !!existing && existing.amount === bill.amount;
-    if (isSamePayment) {
-      await p.remove(existing.id);
-    } else {
-      await p.add(
-        {
-          date: isoDate(),
-          type: "despesa",
-          amount: bill.amount,
-          category: bill.category,
-          description: paymentDescription(bill.category, month),
-        },
-        false,
-      );
+    try {
+      if (existing) await p.remove(existing.id);
+      if (!isSamePayment) {
+        await p.add(
+          {
+            date: isoDate(),
+            type: "despesa",
+            amount: bill.amount,
+            category: bill.category,
+            description: paymentDescription(bill.category, month),
+          },
+          false,
+        );
+      }
+    } finally {
+      setBusyBill(null);
     }
-    setBusyBill(null);
   };
 
   const settleAll = async () => {
@@ -140,6 +137,8 @@ function Index() {
       }
     } else {
       for (const bill of pendingBills) {
+        const previous = paidByCategory.get(bill.category);
+        if (previous) await p.remove(previous.id);
         await p.add(
           {
             date: isoDate(),
