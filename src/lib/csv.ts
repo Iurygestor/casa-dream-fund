@@ -71,10 +71,13 @@ export function createCsv(settings: Settings, transactions: Transaction[], budge
 export function parseCsvImport(source: string): CsvImportData {
   const rows = parseRows(source);
   if (rows.length < 2) throw new Error("Adicione ao menos um registro depois do cabeçalho.");
-  const headers = rows[0].map((h) => h.trim().toLowerCase());
+  const headerRow = rows[0];
+  if (!headerRow) throw new Error("Cabeçalho CSV ausente.");
+  const headers = headerRow.map((h) => h.trim().toLowerCase());
   if (headers.join("|") !== csvHeaders.join("|")) throw new Error("Cabeçalho incompatível. Baixe o modelo CSV atualizado do Plano Casa.");
   const errors: CsvImportData["errors"] = [];
-  let settings: Settings | undefined;\n  let displayName: string | undefined;
+  let settings: Settings | undefined;
+  let displayName: string | undefined;
   const transactions: CsvImportData["transactions"] = [];
   const budgets = new Map<string, CsvBudget>();
   rows.slice(1).forEach((values, index) => {
@@ -91,7 +94,8 @@ export function parseCsvImport(source: string): CsvImportData {
           goal: decimal(row.meta_casa, true),
         });
         if (!parsed.success) throw new Error("Configuração inválida: " + parsed.error.issues.map((issue) => issue.message).join(", "));
-        settings = parsed.data;\n        displayName = row.nome_exibicao || undefined;
+        settings = parsed.data;
+        displayName = row.nome_exibicao || undefined;
       } else if (row.tipo_registro === "LANCAMENTO") {
         const parsed = transactionSchema.safeParse({
           date: row.data, type: row.tipo, amount: decimal(row.valor),
@@ -121,5 +125,11 @@ export function parseCsvImport(source: string): CsvImportData {
       errors.push({ line, message: error instanceof Error ? error.message : "Dados inválidos." });
     }
   });
-  return { settings, displayName, transactions, budgets: [...budgets.values()], errors };
+  return {
+    ...(settings ? { settings } : {}),
+    ...(displayName !== undefined ? { displayName } : {}),
+    transactions,
+    budgets: [...budgets.values()],
+    errors,
+  };
 }
