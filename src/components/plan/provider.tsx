@@ -13,6 +13,7 @@ import {
   type Transaction,
 } from "@/lib/finance";
 import { toast } from "sonner";
+import type { CsvImportData } from "@/lib/csv";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { LockKeyhole, Mail, ArrowRight } from "lucide-react";
@@ -39,6 +40,7 @@ type PlanContext = {
   clear: () => Promise<void>;
   saveSettings: (s: Settings, name: string) => Promise<boolean>;
   restore: (value: unknown) => Promise<void>;
+  importCsv: (data: CsvImportData) => Promise<{ inserted: number; duplicates: number }>;
   signOut: () => Promise<void>;
 };
 const Context = createContext<PlanContext | null>(null);
@@ -201,6 +203,44 @@ export function PlanProvider({ children }: { children: ReactNode }) {
       return false;
     }
   };
+  const importCsv = async (data: CsvImportData) => {
+    const account = requireUser();
+    if (!account) throw new Error("Entre na sua conta para importar.");
+    if (data.errors.length) throw new Error("Corrija os erros do CSV antes de importar.");
+    const existing = query.data?.transactions ?? [];
+    const seen = new Set(existing.map((t) => [t.date, t.type, t.amount, t.category ?? "", t.description].join("|")));
+    const unique = data.transactions.filter((t) => {
+      const key = [t.date, t.type, t.amount, t.category ?? "", t.description].join("|");
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+    if (data.settings) {
+      const { error } = await supabase.from("plan_settings").upsert({ ...settingsSchema.parse(data.settings), user_id: account.id });
+      if (error) throw error;
+    }
+    if (data.displayName !== undefined) {
+      const { error } = await supabase.from("profiles").update({ display_name: data.displayName.slice(0, 100) }).eq("id", account.id);
+      if (error) throw error;
+    }
+    if (data.budgets.length) {
+      const rows = data.budgets.map((b) => ({
+        user_id: account.id, month: b.month, planned_income: b.planned_income,
+        planned_expenses: b.planned_expenses, updated_at: new Date().toISOString(),
+      }));
+      const { error } = await (supabase.from("monthly_budgets" as any) as any)
+        .upsert(rows, { onConflict: "user_id,month" });
+      if (error) throw error;
+    }
+    if (unique.length) {
+      const rows = unique.map((t) => ({ ...transactionSchema.parse(t), user_id: account.id }));
+      const { error } = await supabase.from("transactions").insert(rows);
+      if (error) throw error;
+    }
+    await invalidate();
+    toast.success("Planilha importada com sucesso");
+    return { inserted: unique.length, duplicates: data.transactions.length - unique.length };
+  };
   const restore = async (value: unknown) => {
     const account = requireUser();
     if (!account) return;
@@ -248,6 +288,7 @@ export function PlanProvider({ children }: { children: ReactNode }) {
         clear,
         saveSettings,
         restore,
+        importCsv,
         signOut,
       }}
     >
