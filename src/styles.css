@@ -2778,3 +2778,360 @@ h1 {
 .page-back-button svg {
   flex: 0 0 auto;
 }
+
+
+/* Projection dashboard: financial overview */
+.projection-kpis {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 20px 18px;
+  margin-bottom: 27px;
+}
+.projection-kpis .stat-summary {
+  min-width: 0;
+  padding: 15px 16px;
+  border: 1px solid var(--border);
+  border-left: 2px solid var(--primary);
+  border-radius: 13px;
+  background: var(--card);
+}
+.projection-kpis .stat-summary strong {
+  display: block;
+  font-size: clamp(19px, 2.1vw, 25px);
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+.projection-chart-panel {
+  padding: 23px 20px 17px;
+  overflow: hidden;
+}
+.projection-chart-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin: 0 5px 17px;
+}
+.projection-chart-header h2 {
+  font-size: 16px;
+  font-weight: 650;
+  margin-top: 4px;
+}
+.projection-view-switch,
+.projection-periods {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 4px;
+  border: 1px solid var(--border);
+  border-radius: 11px;
+  background: var(--muted);
+}
+.projection-view-switch button,
+.projection-periods button {
+  min-height: 34px;
+  padding: 0 13px;
+  border: 0;
+  border-radius: 8px;
+  color: var(--muted-foreground);
+  background: transparent;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 150ms ease, color 150ms ease, box-shadow 150ms ease;
+}
+.projection-view-switch button.active,
+.projection-periods button.active {
+  color: var(--foreground);
+  background: var(--card);
+  box-shadow: var(--shadow-card);
+}
+.projection-periods {
+  margin: 0 5px 10px;
+  background: transparent;
+  border-color: transparent;
+  padding-left: 0;
+}
+.projection-periods button {
+  min-width: 43px;
+  min-height: 30px;
+  padding: 0 10px;
+}
+.projection-large-chart {
+  width: 100%;
+  height: 365px;
+  min-width: 0;
+  animation: projection-chart-in 180ms ease-out;
+}
+@keyframes projection-chart-in {
+  from { opacity: .55; transform: translateY(3px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.projection-legend {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 11px 19px;
+  margin: 13px 4px 5px;
+  color: var(--muted-foreground);
+  font-size: 10px;
+}
+.projection-legend button,
+.projection-legend > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 3px 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font-size: inherit;
+}
+.projection-legend button {
+  cursor: pointer;
+}
+.projection-legend button.disabled {
+  opacity: .35;
+  text-decoration: line-through;
+}
+.projection-legend i {
+  display: inline-block;
+  width: 19px;
+  height: 0;
+  border-top: 3px solid currentColor;
+  border-radius: 2px;
+}
+.projection-legend .legend-income { color: var(--income); border-top-style: solid; }
+.projection-legend .legend-expense { color: var(--expense); border-top-style: solid; }
+.projection-legend .legend-balance { color: var(--gold); border-top-style: solid; }
+.projection-legend .legend-wealth { color: var(--primary); border-top-style: solid; }
+.projection-legend .legend-plan { color: var(--muted-foreground); border-top-style: dashed; }
+.projection-legend .legend-realized { color: var(--primary); border-top-style: solid; }
+.projection-legend .legend-future { color: var(--deposit); border-top-style: dashed; }
+.projection-legend .legend-goal { color: var(--gold); border-top-style: dashed; }
+.projection-legend-note {
+  flex-basis: 100%;
+  text-align: center;
+  font-size: 9px;
+}
+.projection-plan-delta {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin: 13px 5px 0;
+  font-size: 13px;
+  font-weight: 650;
+}
+.projection-plan-delta.positive { color: var(--income); }
+.projection-plan-delta.negative { color: var(--expense); }
+.projection-plan-delta small {
+  width: 100%;
+  color: var(--muted-foreground);
+  font-size: 10px;
+  font-weight: 400;
+}
+.projection-chart-hint {
+  margin: 12px 5px 0;
+  color: var(--muted-foreground);
+  font-size: 10px;
+  line-height: 1.7;
+}
+.projection-empty {
+  display: flex;
+  height: 100%;
+  min-height: 170px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 24px;
+  color: var(--muted-foreground);
+  text-align: center;
+  font-size: 11px;
+  line-height: 1.7;
+}
+.projection-empty strong {
+  color: var(--foreground);
+  font-size: 13px;
+}
+.projection-empty.compact {
+  min-height: 120px;
+}
+.projection-simulation {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 15px 20px;
+  padding: 19px 20px;
+  border: 1px solid var(--border);
+  border-radius: 15px;
+  background: var(--card);
+}
+.projection-simulation > div:first-child h2 {
+  font-size: 15px;
+}
+.projection-simulation > div:first-child p {
+  max-width: 500px;
+  line-height: 1.6;
+}
+.projection-simulation .simulation-input {
+  width: 205px;
+}
+.simulation-comparison {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  padding-top: 15px;
+  border-top: 1px solid var(--border);
+}
+.simulation-comparison > div {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 5px;
+}
+.simulation-comparison span,
+.simulation-comparison small {
+  color: var(--muted-foreground);
+  font-size: 10px;
+}
+.simulation-comparison strong {
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+.projection-budget {
+  margin-top: 25px;
+}
+.projection-budget-heading {
+  align-items: center;
+}
+.projection-budget-heading h2 {
+  font-size: 15px;
+  margin-top: 3px;
+}
+.projection-month-comparison {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  padding: 12px 13px;
+  margin: -7px 0 20px;
+  border-radius: 10px;
+  background: var(--muted);
+}
+.projection-month-comparison > div {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 5px 10px;
+}
+.projection-month-comparison span {
+  color: var(--muted-foreground);
+  font-size: 10px;
+}
+.projection-month-comparison strong {
+  font-size: 11px;
+}
+.projection-milestones {
+  margin-top: 23px;
+}
+.projection-milestones .chart-title {
+  margin-bottom: 8px;
+}
+.projection-method-note {
+  margin: 15px 2px 20px;
+}
+@media (max-width: 700px) {
+  .projection-kpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 11px;
+  }
+  .projection-kpis .stat-summary {
+    padding: 13px 11px;
+  }
+  .projection-kpis .stat-summary p {
+    font-size: 10px;
+  }
+  .projection-kpis .stat-summary strong {
+    font-size: clamp(17px, 4.7vw, 22px);
+  }
+  .projection-kpis .stat-summary small {
+    font-size: 9px;
+    line-height: 1.5;
+  }
+  .projection-chart-panel {
+    padding: 17px 11px 14px;
+  }
+  .projection-chart-header {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 12px;
+    margin-inline: 3px;
+  }
+  .projection-view-switch {
+    width: 100%;
+  }
+  .projection-view-switch button {
+    flex: 1;
+  }
+  .projection-periods {
+    width: 100%;
+    justify-content: space-between;
+    gap: 2px;
+    margin-inline: 0;
+  }
+  .projection-periods button {
+    flex: 1;
+    min-width: 0;
+    padding-inline: 5px;
+  }
+  .projection-large-chart {
+    height: 310px;
+  }
+  .projection-legend {
+    justify-content: flex-start;
+    gap: 9px 14px;
+    font-size: 9px;
+  }
+  .projection-simulation {
+    grid-template-columns: 1fr;
+    padding: 17px 14px;
+  }
+  .projection-simulation .simulation-input {
+    width: 100%;
+  }
+  .simulation-comparison {
+    grid-template-columns: 1fr 1fr;
+    gap: 13px;
+  }
+  .simulation-comparison > div:last-child {
+    grid-column: 1 / -1;
+    padding-top: 11px;
+    border-top: 1px solid var(--border);
+  }
+  .projection-budget-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .projection-month-comparison {
+    grid-template-columns: 1fr;
+  }
+  .projection-month-comparison > div {
+    align-items: baseline;
+  }
+}
+@media (max-width: 380px) {
+  .projection-kpis {
+    gap: 9px;
+  }
+  .projection-kpis .stat-summary strong {
+    font-size: 17px;
+  }
+  .projection-large-chart {
+    height: 275px;
+  }
+}
