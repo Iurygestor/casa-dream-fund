@@ -116,7 +116,7 @@ export function PlanProvider({ children }: { children: ReactNode }) {
     queryFn: async () => {
       if (!user)
         return { settings: defaults(), transactions: [] as Transaction[], budgets: [] as MonthlyBudget[], creditCards: [] as CreditCard[], displayName: "" };
-      const [settingsResult, profileResult, budgetsResult] = await Promise.all([
+      const [settingsResult, profileResult, budgetsResult, cardsResult] = await Promise.all([
         supabase.from("plan_settings").select("*").eq("user_id", user.id).maybeSingle(),
         supabase.from("profiles").select("display_name").eq("id", user.id).single(),
         (supabase.from("monthly_budgets" as any) as any)
