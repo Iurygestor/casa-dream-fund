@@ -17,6 +17,7 @@ export const categories = [
 ] as const;
 export const types = ["despesa", "recebimento", "bonus", "aporte", "retirada"] as const;
 export type TransactionType = (typeof types)[number];
+export const RECEIVABLE_PREFIX = "[A RECEBER] ";
 export const typeLabels: Record<TransactionType, string> = {
   despesa: "Despesa",
   recebimento: "Recebimento",
