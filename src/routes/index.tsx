@@ -34,6 +34,7 @@ import {
   isoDate,
   categories,
   RECEIVABLE_PREFIX,
+  receivableDetails,
 } from "@/lib/finance";
 import { pageHead } from "@/lib/metadata";
 
@@ -65,6 +66,7 @@ function Index() {
   const [busyReceivable, setBusyReceivable] = useState<string | null>(null);
   const [deletingPayment, setDeletingPayment] = useState<string | null>(null);
   const [deletingBill, setDeletingBill] = useState<string | null>(null);
+  const [deletingReceivable, setDeletingReceivable] = useState<string | null>(null);
   const monthlyPlan = p.budgets.find((item) => item.month === month);
   const plannedIncome = monthlyPlan?.planned_income ?? 0;
   const plannedCategories = Object.entries(monthlyPlan?.planned_expenses ?? {})
@@ -128,7 +130,7 @@ function Index() {
           type: "recebimento",
           amount: transaction.amount,
           category: null,
-          description: transaction.description.slice(RECEIVABLE_PREFIX.length).trim() || "Conta recebida",
+          description: (() => { const details = receivableDetails(transaction.description); return `${details.description} (Fonte: ${details.source})`; })(),
         },
         false,
       );
@@ -340,20 +342,28 @@ function Index() {
             </div>
             {receivables.length ? (
               <div className="bill-list receivable-list">
-                {receivables.map((transaction) => (
-                  <div className="bill-row receivable-row" key={transaction.id}>
-                    <span className="bill-check receivable-check"><ArrowUpRight size={17} /></span>
-                    <span className="bill-main">
-                      <strong>{transaction.description.slice(RECEIVABLE_PREFIX.length).trim() || "Valor a receber"}</strong>
-                      <span>Previsto para {dateValue(transaction.date).toLocaleDateString("pt-BR")}</span>
-                    </span>
-                    <span className="bill-status receivable-status">A receber</span>
-                    <strong className="bill-amount">{money(transaction.amount)}</strong>
-                    <Button size="sm" variant="outline" disabled={busyReceivable === transaction.id} onClick={() => void markReceivableReceived(transaction)}>
-                      {busyReceivable === transaction.id ? "Salvando…" : "Recebi"}
-                    </Button>
-                  </div>
-                ))}
+                {receivables.map((transaction) => {
+                  const details = receivableDetails(transaction.description);
+                  return (
+                    <div className="receivable-row-wrap" key={transaction.id}>
+                      <div className="bill-row receivable-row">
+                        <span className="bill-check receivable-check"><ArrowUpRight size={17} /></span>
+                        <span className="bill-main">
+                          <strong>{details.description}</strong>
+                          <span>Fonte: {details.source} · Previsto para {dateValue(transaction.date).toLocaleDateString("pt-BR")}</span>
+                        </span>
+                        <span className="bill-status receivable-status">A receber</span>
+                        <strong className="bill-amount">{money(transaction.amount)}</strong>
+                        <Button size="sm" variant="outline" disabled={busyReceivable === transaction.id} onClick={() => void markReceivableReceived(transaction)}>
+                          {busyReceivable === transaction.id ? "Salvando…" : "Recebi"}
+                        </Button>
+                      </div>
+                      <Button type="button" variant="ghost" size="icon" className="bill-delete-button receivable-delete-button" title="Excluir conta a receber" aria-label="Excluir conta a receber" onClick={() => setDeletingReceivable(transaction.id)} disabled={busyReceivable === transaction.id}>
+                        <Trash2 size={16} />
+                      </Button>
+                    </div>
+                  );
+                })}
               </div>
             ) : (
               <div className="receivable-empty">Nenhuma conta a receber cadastrada para este mês.</div>
@@ -440,6 +450,22 @@ function Index() {
               await p.removeBudgetCategory(month, deletingBill);
             }
             setDeletingBill(null);
+          }}
+        />
+        <Confirm
+          open={!!deletingReceivable}
+          onOpenChange={(open) => { if (!open) setDeletingReceivable(null); }}
+          title="Excluir conta a receber?"
+          description={(() => {
+            const item = receivables.find((transaction) => transaction.id === deletingReceivable);
+            if (!item) return "Esta ação não pode ser desfeita.";
+            const details = receivableDetails(item.description);
+            return `${details.description} · Fonte: ${details.source} · ${money(item.amount)}. Esta conta será removida.`;
+          })()}
+          label="Excluir conta"
+          onConfirm={async () => {
+            if (deletingReceivable) await p.remove(deletingReceivable);
+            setDeletingReceivable(null);
           }}
         />
         <Confirm
