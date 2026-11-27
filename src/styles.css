@@ -2419,6 +2419,29 @@ h1 {
   display: flex;
   flex-direction: column;
 }
+.bill-row-with-delete {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 38px;
+  align-items: center;
+  border-bottom: 1px solid var(--border);
+}
+.bill-row-with-delete:not(.has-delete) {
+  grid-template-columns: minmax(0, 1fr);
+}
+.bill-row-with-delete .bill-row {
+  min-width: 0;
+  border-bottom: 0;
+}
+.bill-delete-button {
+  width: 34px;
+  height: 34px;
+  color: var(--muted-foreground);
+  border-radius: 9px;
+}
+.bill-delete-button:hover {
+  color: var(--destructive);
+  background: var(--muted);
+}
 .bill-row {
   display: grid;
   grid-template-columns: 34px minmax(0, 1fr) auto auto;
