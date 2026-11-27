@@ -37,8 +37,7 @@ function Launch() {
 }
 function LaunchForm({ initialType }: { initialType: TransactionType }) {
   const p = usePlan(),
-    navigate = useNavigate(),
-    selectedCardId = creditCardId || p.creditCards[0]?.id || "";
+    navigate = useNavigate();
   const [type, setType] = useState<TransactionType>(initialType),
     [amount, setAmount] = useState(""),
     [date, setDate] = useState(isoDate()),
@@ -49,6 +48,7 @@ function LaunchForm({ initialType }: { initialType: TransactionType }) {
     [installments, setInstallments] = useState("1"),
     [depositBonus, setDepositBonus] = useState(false),
     [busy, setBusy] = useState(false);
+  const selectedCardId = creditCardId || p.creditCards[0]?.id || "";
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     const result = transactionSchema.safeParse({
