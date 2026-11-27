@@ -109,21 +109,13 @@ export const monthEnd = (month: string) => {
 };
 export const plannedDeposit = (month: string, s: Settings) =>
   month >= s.deposit_start ? s.monthly_deposit : 0;
-export function budget(month: string, s: Settings) {
-  const income = month === "2026-12" ? 3412.4 : month >= "2027-01" ? 4000 : 0;
-  const expenses =
-    month === "2026-12"
-      ? 3428.41
-      : month === "2027-01"
-        ? 2714.21
-        : ["2027-02", "2027-03"].includes(month)
-          ? 2496.79
-          : month === "2027-04"
-            ? 2324.04
-            : month >= "2027-05"
-              ? 2205.92
-              : 0;
-  const deposit = month === "2026-12" ? 0 : plannedDeposit(month, s);
+export function budget(
+  month: string,
+  s: Settings,
+  income = 0,
+  expenses = 0,
+) {
+  const deposit = plannedDeposit(month, s);
   return { income, expenses, deposit, remaining: income - expenses - deposit };
 }
 export function monthlyTotals(transactions: Transaction[], month: string) {
