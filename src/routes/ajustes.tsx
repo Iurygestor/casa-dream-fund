@@ -18,7 +18,7 @@ import { usePlan } from "@/components/plan/provider";
 import { PageHeading, Confirm, CloudNotice } from "@/components/plan/shared";
 import { parseDecimal, settingsSchema, backupSchema, isoDate, type Settings } from "@/lib/finance";
 import { pageHead } from "@/lib/metadata";
-import { createCsv, parseCsvImport, type CsvImportData } from "@/lib/csv";
+import { createCsv, csvHeaders, parseCsvImport, type CsvImportData } from "@/lib/csv";
 import { toast } from "sonner";
 export const Route = createFileRoute("/ajustes")({
   head: () =>
@@ -113,10 +113,7 @@ function SettingsForm() {
     URL.revokeObjectURL(url);
   }
   function downloadCsvTemplate() {
-    downloadCsv(createCsv({
-      initial_balance: 0, initial_date: isoDate(), daily_rate: 0,
-      monthly_deposit: 0, deposit_start: isoDate().slice(0, 7), fgts: 0, goal: null,
-    }, [], []), "modelo-plano-casa.csv");
+    downloadCsv("\\uFEFF" + csvHeaders.join(";") + "\\r\\n", "modelo-plano-casa.csv");
   }
   function exportCsv() {
     if (!p.user) { p.setAuthOpen(true); return; }
@@ -308,7 +305,7 @@ function SettingsForm() {
             </div>
             <div className="mt-4 border-t pt-4">
               <h3 className="font-semibold">Planilha CSV — Plano Casa</h3>
-              <p className="subtle-note">Preencha o modelo no Excel ou Google Planilhas. A importação valida os dados e mantém os lançamentos existentes.</p>
+              <p className="subtle-note">Preencha no Excel ou Google Planilhas. Adicione uma linha CONFIGURACAO, linhas LANCAMENTO e linhas ORCAMENTO conforme necessário. Use datas AAAA-MM-DD, meses AAAA-MM, valores em reais e despesas planejadas no formato Categoria=Valor. A importação valida e preserva os lançamentos existentes.</p>
               {csvPreview && csvPreview.errors.length > 0 && (
                 <div className="mt-3 rounded-lg border border-destructive/40 p-3" role="alert">
                   <strong className="text-sm">A planilha contém {csvPreview.errors.length} erro(s). Corrija e importe novamente.</strong>
