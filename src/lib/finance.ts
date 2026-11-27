@@ -18,6 +18,16 @@ export const categories = [
 export const types = ["despesa", "recebimento", "bonus", "aporte", "retirada"] as const;
 export type TransactionType = (typeof types)[number];
 export const RECEIVABLE_PREFIX = "[A RECEBER] ";
+export function receivableDetails(raw: string) {
+  const value = raw.startsWith(RECEIVABLE_PREFIX) ? raw.slice(RECEIVABLE_PREFIX.length).trim() : raw.trim();
+  if (!value.startsWith("Fonte: ")) return { source: "Fonte não informada", description: value || "Valor a receber" };
+  const separator = value.indexOf(" | ");
+  if (separator < 0) return { source: value.slice(7).trim() || "Fonte não informada", description: "Valor a receber" };
+  return {
+    source: value.slice(7, separator).trim() || "Fonte não informada",
+    description: value.slice(separator + 3).trim() || "Valor a receber",
+  };
+}
 export const typeLabels: Record<TransactionType, string> = {
   despesa: "Despesa",
   recebimento: "Recebimento",
