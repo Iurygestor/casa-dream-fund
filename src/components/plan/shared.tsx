@@ -54,9 +54,9 @@ export function AppShell({ children }: { children: ReactNode }) {
     <div className="app-shell">
       <header className="app-header">
         <Link to="/" className="brand">
-          <img src="/icon-192.png" alt="" />
+          <img src="/grana-logo.svg" alt="" />
           <span>
-            Plano Casa<span className="brand-sub">UM FUTURO COM ENDEREÇO</span>
+            Grana<span className="brand-sub">CONTROLE FINANCEIRO</span>
           </span>
         </Link>
         <div className="header-actions">
