@@ -33,10 +33,21 @@ export type CreditCard = {
   closing_day: number;
   due_day: number;
 };
+export type CreditCardInvoice = {
+  id: string;
+  card_id: string;
+  reference_month: string;
+  closing_date: string;
+  due_date: string;
+  total_amount: number;
+  paid_amount: number;
+  status: "open" | "closed" | "paid";
+};
 type PlanContext = {
   user: User | null;
   budgets: MonthlyBudget[];
   creditCards: CreditCard[];
+  creditCardInvoices: CreditCardInvoice[];
   authLoading: boolean;
   settings: Settings;
   transactions: Transaction[];
@@ -115,8 +126,8 @@ export function PlanProvider({ children }: { children: ReactNode }) {
     enabled: !!user,
     queryFn: async () => {
       if (!user)
-        return { settings: defaults(), transactions: [] as Transaction[], budgets: [] as MonthlyBudget[], creditCards: [] as CreditCard[], displayName: "" };
-      const [settingsResult, profileResult, budgetsResult, cardsResult] = await Promise.all([
+        return { settings: defaults(), transactions: [] as Transaction[], budgets: [] as MonthlyBudget[], creditCards: [] as CreditCard[], creditCardInvoices: [] as CreditCardInvoice[], displayName: "" };
+      const [settingsResult, profileResult, budgetsResult, cardsResult, invoicesResult] = await Promise.all([
         supabase.from("plan_settings").select("*").eq("user_id", user.id).maybeSingle(),
         supabase.from("profiles").select("display_name").eq("id", user.id).single(),
         (supabase.from("monthly_budgets" as any) as any)
@@ -128,11 +139,21 @@ export function PlanProvider({ children }: { children: ReactNode }) {
           .eq("user_id", user.id)
           .eq("is_active", true)
           .order("created_at"),
+        (supabase.from("credit_card_invoices" as any) as any)
+          .select("id,card_id,reference_month,closing_date,due_date,total_amount,paid_amount,status")
+          .eq("user_id", user.id)
+          .order("due_date", { ascending: true }),
       ]);
       if (settingsResult.error) throw settingsResult.error;
       if (profileResult.error) throw profileResult.error;
       if (budgetsResult.error) throw budgetsResult.error;
       if (cardsResult.error) throw cardsResult.error;
+      if (invoicesResult.error) throw invoicesResult.error;
+      const creditCardInvoices: CreditCardInvoice[] = (invoicesResult.data ?? []).map((invoice: any) => ({
+        ...invoice,
+        total_amount: Number(invoice.total_amount),
+        paid_amount: Number(invoice.paid_amount),
+      }));
       const creditCards: CreditCard[] = (cardsResult.data ?? []).map((card: any) => ({
         ...card,
         credit_limit: Number(card.credit_limit),
@@ -169,6 +190,7 @@ export function PlanProvider({ children }: { children: ReactNode }) {
         transactions,
         budgets,
         creditCards,
+        creditCardInvoices,
         displayName: profileResult.data.display_name,
       };
     },
@@ -351,6 +373,7 @@ export function PlanProvider({ children }: { children: ReactNode }) {
         transactions: query.data?.transactions ?? [],
         budgets: query.data?.budgets ?? [],
         creditCards: query.data?.creditCards ?? [],
+        creditCardInvoices: query.data?.creditCardInvoices ?? [],
         displayName: query.data?.displayName ?? "",
         loading: !!user && query.isPending,
         error: !!user && query.isError,
