@@ -170,6 +170,25 @@ function ProjectionView() {
     return { averageIncome, recurringExpenses, history };
   }, [currentMonth, actualMonthly, p.transactions]);
 
+  const projectedWealth12 = useMemo(() => {
+    let unreservedSurplus = 0;
+    for (let offset = 1; offset <= 12; offset++) {
+      const month = shiftMonth(currentMonth, offset);
+      const budget = p.budgets.find((item) => item.month === month);
+      const invoices = p.creditCardInvoices.filter((invoice) => invoice.due_date.slice(0, 7) === month && invoice.status !== "paid");
+      const outstanding = sum(invoices.map((invoice) => Math.max(0, invoice.total_amount - invoice.paid_amount)));
+      const plannedExpenses = Object.entries(budget?.planned_expenses ?? {});
+      const plannedCard = plannedExpenses.find(([category]) => category.toLowerCase().includes("fatura"))?.[1] ?? 0;
+      const expenses = budget
+        ? sum(plannedExpenses.map(([, value]) => value)) + Math.max(0, outstanding - plannedCard)
+        : sum(forecastRows.recurringExpenses.values()) + outstanding;
+      const income = budget?.planned_income ?? forecastRows.averageIncome;
+      const deposit = month >= p.settings.deposit_start ? simulatedDeposit : 0;
+      unreservedSurplus += income - expenses - deposit;
+    }
+    return simulated12 + p.settings.fgts + unreservedSurplus;
+  }, [currentMonth, p.budgets, p.creditCardInvoices, p.settings, forecastRows, simulated12, simulatedDeposit]);
+
   const overviewData = useMemo(() => {
     const rows: OverviewPoint[] = [];
     const monthIndex = (month: string) => Number(month.slice(0, 4)) * 12 + Number(month.slice(5, 7));
@@ -291,7 +310,7 @@ function ProjectionView() {
         <article className="stat-summary"><p>Sobra média mensal</p><strong>{money(averageSurplus)}</strong><small>Média dos últimos 3 meses (após aportes)</small></article>
         <article className="stat-summary"><p>Taxa de poupança</p><strong>{pct(savingsRate)}</strong><small>Aportes ÷ receitas nos últimos 3 meses</small></article>
         <article className="stat-summary"><p>Previsão da meta</p><strong>{p.settings.goal && currentProjection.goalMonth ? monthName(currentProjection.goalMonth, true) : "Sem previsão"}</strong><small>{p.settings.goal && currentProjection.goalMonth ? `${Math.max(0, (Number(currentProjection.goalMonth.slice(0, 4)) - today.getFullYear()) * 12 + Number(currentProjection.goalMonth.slice(5, 7)) - (today.getMonth() + 1))} meses restantes` : "Defina o valor da meta em Ajustes"}</small></article>
-        <article className="stat-summary"><p>Patrimônio em 12 meses</p><strong>{money(simulated12 + p.settings.fgts)}</strong><small>Reserva projetada + FGTS informado</small></article>
+        <article className="stat-summary"><p>Patrimônio em 12 meses</p><strong>{money(projectedWealth12)}</strong><small>Reserva + saldo acumulado + FGTS</small></article>
       </section>
 
       <section className="panel projection-chart-panel">
@@ -395,7 +414,7 @@ function ProjectionView() {
           <div><span>Receitas vs. mês anterior</span><strong className={incomeChange === null ? "" : incomeChange >= 0 ? "text-income" : "text-destructive"}>{incomeChange === null ? "Sem base de comparação" : `${incomeChange >= 0 ? "↑" : "↓"} ${pct(Math.abs(incomeChange))}`}</strong></div>
           <div><span>Despesas vs. mês anterior</span><strong className={expenseChange === null ? "" : expenseChange <= 0 ? "text-income" : "text-destructive"}>{expenseChange === null ? "Sem base de comparação" : `${expenseChange >= 0 ? "↑" : "↓"} ${pct(Math.abs(expenseChange))}`}</strong></div>
         </div>
-        {selectedBudget || selectedTransactions.length || selectedInvoices.length ? (
+        {selectedBudget || selectedTransactions.length || selectedInvoices.length || (budgetMonth > currentMonth && !!selectedMonthOverview?.hasData) ? (
           <>
             <p className="budget-eyebrow">RECEITAS POR ORIGEM</p>
             {selectedBudget && Object.keys(selectedBudget.planned_income_sources).length ? Object.entries(selectedBudget.planned_income_sources).map(([origin, value]) => <div className="budget-line" key={origin}><span>{origin}</span><strong>{money(value)}</strong></div>) : <p className="subtle-note">Sem detalhamento de receitas por origem neste mês.</p>}
