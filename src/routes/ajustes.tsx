@@ -139,6 +139,7 @@ function SettingsForm() {
       setCsvPreview(null);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Falha ao importar a planilha.");
+      throw error;
     } finally { setCsvBusy(false); }
   }
   async function importFile(file: File | undefined) {
