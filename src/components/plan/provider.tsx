@@ -115,7 +115,7 @@ export function PlanProvider({ children }: { children: ReactNode }) {
     enabled: !!user,
     queryFn: async () => {
       if (!user)
-        return { settings: defaults(), transactions: [] as Transaction[], budgets: [] as MonthlyBudget[], displayName: "" };
+        return { settings: defaults(), transactions: [] as Transaction[], budgets: [] as MonthlyBudget[], creditCards: [] as CreditCard[], displayName: "" };
       const [settingsResult, profileResult, budgetsResult] = await Promise.all([
         supabase.from("plan_settings").select("*").eq("user_id", user.id).maybeSingle(),
         supabase.from("profiles").select("display_name").eq("id", user.id).single(),
@@ -123,6 +123,11 @@ export function PlanProvider({ children }: { children: ReactNode }) {
           .select("month,planned_income,planned_expenses,planned_income_sources")
           .eq("user_id", user.id)
           .order("month"),
+        (supabase.from("credit_cards" as any) as any)
+          .select("id,name,institution,last_four_digits,credit_limit,closing_day,due_day")
+          .eq("user_id", user.id)
+          .eq("is_active", true)
+          .order("created_at"),
       ]);
       if (settingsResult.error) throw settingsResult.error;
       if (profileResult.error) throw profileResult.error;
