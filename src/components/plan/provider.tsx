@@ -22,6 +22,7 @@ type MonthlyBudget = {
   month: string;
   planned_income: number;
   planned_expenses: Record<string, number>;
+  planned_income_sources: Record<string, number>;
 };
 type PlanContext = {
   user: User | null;
@@ -94,7 +95,7 @@ export function PlanProvider({ children }: { children: ReactNode }) {
         supabase.from("plan_settings").select("*").eq("user_id", user.id).maybeSingle(),
         supabase.from("profiles").select("display_name").eq("id", user.id).single(),
         (supabase.from("monthly_budgets" as any) as any)
-          .select("month,planned_income,planned_expenses")
+          .select("month,planned_income,planned_expenses,planned_income_sources")
           .eq("user_id", user.id)
           .order("month"),
       ]);
@@ -106,6 +107,9 @@ export function PlanProvider({ children }: { children: ReactNode }) {
         planned_income: Number(row.planned_income),
         planned_expenses: Object.fromEntries(
           Object.entries(row.planned_expenses ?? {}).map(([key, value]) => [key, Number(value)]),
+        ),
+        planned_income_sources: Object.fromEntries(
+          Object.entries(row.planned_income_sources ?? {}).map(([key, value]) => [key, Number(value)]),
         ),
       }));
       const transactions: Transaction[] = [];
@@ -226,7 +230,8 @@ export function PlanProvider({ children }: { children: ReactNode }) {
     if (data.budgets.length) {
       const rows = data.budgets.map((b) => ({
         user_id: account.id, month: b.month, planned_income: b.planned_income,
-        planned_expenses: b.planned_expenses, updated_at: new Date().toISOString(),
+        planned_expenses: b.planned_expenses, planned_income_sources: b.planned_income_sources,
+        updated_at: new Date().toISOString(),
       }));
       const { error } = await (supabase.from("monthly_budgets" as any) as any)
         .upsert(rows, { onConflict: "user_id,month" });
