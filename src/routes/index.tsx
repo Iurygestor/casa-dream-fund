@@ -291,10 +291,27 @@ function Index() {
               <span>Receita prevista</span>
               <strong>{money(plan.income)}</strong>
             </div>
+            <p className="budget-eyebrow">ORIGEM DAS RECEITAS</p>
+            {Object.entries(monthlyPlan?.planned_income_sources ?? {}).length ? (
+              Object.entries(monthlyPlan?.planned_income_sources ?? {}).map(([origin, amount]) => (
+                <div className="budget-line" key={origin}>
+                  <span>{origin}</span>
+                  <strong>{money(amount)}</strong>
+                </div>
+              ))
+            ) : (
+              <p className="subtle-note">As receitas ainda não foram detalhadas por origem.</p>
+            )}
             <div className="budget-line">
               <span>Despesas previstas</span>
               <strong>− {money(plan.expenses)}</strong>
             </div>
+            {plannedCategories.map(({ category, amount }) => (
+              <div className="budget-line" key={category}>
+                <span>{category}</span>
+                <strong>{money(amount)}</strong>
+              </div>
+            ))}
             <div className="budget-line">
               <span>Depósito planejado</span>
               <strong>− {money(plan.deposit)}</strong>
