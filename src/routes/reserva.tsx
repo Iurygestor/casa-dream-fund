@@ -204,9 +204,14 @@ function Reserve() {
             const parsedAmount = parseDecimal(amountInput);
             if (!description.trim() || !Number.isFinite(parsedAmount) || parsedAmount <= 0 || !dateInput) return;
             setSaving(true);
-            await p.updateTransaction(editing.id, { description: description.trim(), amount: parsedAmount, date: dateInput });
-            setSaving(false);
-            setEditing(null);
+            try {
+              await p.updateTransaction(editing.id, { description: description.trim(), amount: parsedAmount, date: dateInput });
+              setEditing(null);
+            } catch {
+              // O provider já informa o erro; mantém o formulário aberto para correção ou nova tentativa.
+            } finally {
+              setSaving(false);
+            }
           }}>
             <label>Descrição<input value={description} onChange={(event) => setDescription(event.target.value)} maxLength={120} required /></label>
             <div className="income-edit-fields">
