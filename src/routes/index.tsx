@@ -13,8 +13,10 @@ import {
   TrendingDown,
   Wallet,
   Trash2,
+  Pencil,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { usePlan } from "@/components/plan/provider";
 import {
   PageHeading,
@@ -65,6 +67,11 @@ function Index() {
   const [bulkBusy, setBulkBusy] = useState(false);
   const [busyReceivable, setBusyReceivable] = useState<string | null>(null);
   const [deletingPayment, setDeletingPayment] = useState<string | null>(null);
+  const [editingIncome, setEditingIncome] = useState<(typeof p.transactions)[number] | null>(null);
+  const [editIncomeDescription, setEditIncomeDescription] = useState("");
+  const [editIncomeAmount, setEditIncomeAmount] = useState("");
+  const [editIncomeDate, setEditIncomeDate] = useState(isoDate());
+  const [savingIncome, setSavingIncome] = useState(false);
   const [deletingBill, setDeletingBill] = useState<string | null>(null);
   const [deletingReceivable, setDeletingReceivable] = useState<string | null>(null);
   const monthlyPlan = p.budgets.find((item) => item.month === month);
@@ -452,13 +459,21 @@ function Index() {
           {incomeTransactions.length ? (
             <div className="transaction-list">
               {incomeTransactions.map((transaction) => (
-                <div className="transaction-row month-payment-row" key={transaction.id}>
+                <div className="transaction-row month-payment-row income-entry-row" key={transaction.id}>
                   <span className="transaction-icon tone-recebimento"><TrendingUp size={17} /></span>
                   <div className="transaction-info">
                     <strong>{transaction.description || (transaction.type === "bonus" ? "Bônus" : "Recebimento")}</strong>
                     <span>{transaction.type === "bonus" ? "Bônus" : "Recebido"} em {dateValue(transaction.date).toLocaleDateString("pt-BR")}</span>
                   </div>
-                  <strong className="transaction-value">+ {money(transaction.amount)}</strong>
+                  <strong className="transaction-value income-entry-value">+ {money(transaction.amount)}</strong>
+                  <div className="income-entry-actions">
+                    <Button variant="ghost" size="icon" title="Editar receita" aria-label="Editar receita" onClick={() => { setEditingIncome(transaction); setEditIncomeDescription(transaction.description); setEditIncomeAmount(String(transaction.amount).replace(".", ",")); setEditIncomeDate(transaction.date); }}>
+                      <Pencil size={15} />
+                    </Button>
+                    <Button variant="ghost" size="icon" title="Excluir receita" aria-label="Excluir receita" onClick={() => setDeletingPayment(transaction.id)}>
+                      <Trash2 size={15} />
+                    </Button>
+                  </div>
                 </div>
               ))}
             </div>
@@ -467,6 +482,36 @@ function Index() {
           )}
         </div>
       </section>
+
+      <Dialog open={!!editingIncome} onOpenChange={(open) => { if (!open && !savingIncome) setEditingIncome(null); }}>
+        <DialogContent className="income-edit-dialog">
+          <DialogTitle>Editar receita</DialogTitle>
+          <DialogDescription>Atualize a descrição, o valor ou a data desta entrada.</DialogDescription>
+          <form className="income-edit-form" onSubmit={async (event) => {
+            event.preventDefault();
+            if (!editingIncome) return;
+            const amount = Number(editIncomeAmount.trim().replace(/\\./g, "").replace(",", "."));
+            if (!editIncomeDescription.trim() || !Number.isFinite(amount) || amount <= 0 || !editIncomeDate) return;
+            setSavingIncome(true);
+            try {
+              await p.updateTransaction(editingIncome.id, { description: editIncomeDescription.trim(), amount, date: editIncomeDate });
+              setEditingIncome(null);
+            } finally {
+              setSavingIncome(false);
+            }
+          }}>
+            <label>Descrição<input value={editIncomeDescription} onChange={(event) => setEditIncomeDescription(event.target.value)} maxLength={120} required /></label>
+            <div className="income-edit-fields">
+              <label>Valor (R$)<input inputMode="decimal" value={editIncomeAmount} onChange={(event) => setEditIncomeAmount(event.target.value)} required /></label>
+              <label>Data<input type="date" value={editIncomeDate} onChange={(event) => setEditIncomeDate(event.target.value)} required /></label>
+            </div>
+            <div className="income-edit-actions">
+              <Button type="button" variant="outline" onClick={() => setEditingIncome(null)} disabled={savingIncome}>Cancelar</Button>
+              <Button type="submit" disabled={savingIncome}>{savingIncome ? "Salvando…" : "Salvar alterações"}</Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       <section className="transactions-section month-payments-section">
         <SectionHeading title="Despesas do mês" aside={<span>SAÍDAS CONFIRMADAS</span>} />
