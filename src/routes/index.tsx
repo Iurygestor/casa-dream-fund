@@ -37,6 +37,7 @@ import {
   categories,
   RECEIVABLE_PREFIX,
   receivableDetails,
+  parseDecimal,
 } from "@/lib/finance";
 import { pageHead } from "@/lib/metadata";
 
@@ -491,12 +492,14 @@ function Index() {
           <form className="income-edit-form" onSubmit={async (event) => {
             event.preventDefault();
             if (!editingIncome) return;
-            const amount = Number(editIncomeAmount.trim().replace(/\./g, "").replace(",", "."));
+            const amount = parseDecimal(editIncomeAmount);
             if (!editIncomeDescription.trim() || !Number.isFinite(amount) || amount <= 0 || !editIncomeDate) return;
             setSavingIncome(true);
             try {
               await p.updateTransaction(editingIncome.id, { description: editIncomeDescription.trim(), amount, date: editIncomeDate });
               setEditingIncome(null);
+            } catch {
+              // O provider já informa o erro; mantém a edição aberta para nova tentativa.
             } finally {
               setSavingIncome(false);
             }
