@@ -27,6 +27,7 @@ import {
   reserveBalance,
   plannedDeposit,
   dayDifference,
+  RECEIVABLE_PREFIX,
 } from "@/lib/finance";
 import { pageHead } from "@/lib/metadata";
 
@@ -122,11 +123,13 @@ function ProjectionView() {
   const rangeEnd = period === "Tudo" ? shiftMonth(currentMonth, 60) : shiftMonth(currentMonth, Math.ceil((periodCount - 1) / 2));
 
   const actualMonthly = useMemo(() => {
-    const result = new Map<string, { income: number; expenses: number; deposits: number; withdrawals: number }>();
+    const result = new Map<string, { income: number; bonuses: number; expenses: number; deposits: number; withdrawals: number }>();
     for (const transaction of p.transactions) {
+      if (transaction.type === "recebimento" && transaction.description.startsWith(RECEIVABLE_PREFIX)) continue;
       const key = monthKey(transaction.date);
-      const item = result.get(key) ?? { income: 0, expenses: 0, deposits: 0, withdrawals: 0 };
-      if (transaction.type === "recebimento" || transaction.type === "bonus") item.income += transaction.amount;
+      const item = result.get(key) ?? { income: 0, bonuses: 0, expenses: 0, deposits: 0, withdrawals: 0 };
+      if (transaction.type === "recebimento") item.income += transaction.amount;
+      if (transaction.type === "bonus") item.bonuses += transaction.amount;
       if (transaction.type === "despesa") item.expenses += transaction.amount;
       if (transaction.type === "aporte") item.deposits += transaction.amount;
       if (transaction.type === "retirada") item.withdrawals += transaction.amount;
@@ -139,19 +142,19 @@ function ProjectionView() {
     () => [3, 2, 1].map((offset) => shiftMonth(currentMonth, -offset)),
     [currentMonth],
   );
-  const recentRows = recentMonths.map((month) => actualMonthly.get(month) ?? { income: 0, expenses: 0, deposits: 0, withdrawals: 0 });
-  const averageSurplus = average(recentRows.map((row) => row.income - row.expenses - row.deposits));
-  const recentIncome = sum(recentRows.map((row) => row.income));
+  const recentRows = recentMonths.map((month) => actualMonthly.get(month) ?? { income: 0, bonuses: 0, expenses: 0, deposits: 0, withdrawals: 0 });
+  const averageSurplus = average(recentRows.map((row) => row.income + row.bonuses - row.expenses - row.deposits));
+  const recentIncome = sum(recentRows.map((row) => row.income + row.bonuses));
   const recentDeposits = sum(recentRows.map((row) => row.deposits));
   const savingsRate = recentIncome > 0 ? (recentDeposits / recentIncome) * 100 : 0;
 
   const forecastRows = useMemo(() => {
     const completedMonths = [3, 2, 1].map((offset) => shiftMonth(currentMonth, -offset));
     const history = completedMonths.map((month) => {
-      const row = actualMonthly.get(month) ?? { income: 0, expenses: 0, deposits: 0, withdrawals: 0 };
+      const row = actualMonthly.get(month) ?? { income: 0, bonuses: 0, expenses: 0, deposits: 0, withdrawals: 0 };
       return { month, ...row };
     });
-    const averageIncome = average(history.map((row) => row.income));
+    const averageIncome = average(history.map((row) => row.income + row.bonuses));
     const expenseByCategory = new Map<string, number[]>();
     for (const month of completedMonths) {
       const categoryTotals = new Map<string, number>();
@@ -212,7 +215,7 @@ function ProjectionView() {
         : sum([...forecastRows.recurringExpenses.values()]) + invoiceDue;
       const income = future
         ? (budget ? budget.planned_income : forecastRows.averageIncome)
-        : pastData?.income ?? 0;
+        : (pastData?.income ?? 0) + (pastData?.bonuses ?? 0);
       const expenses = future
         ? forecastExpenses
         : pastData?.expenses ?? 0;
@@ -285,12 +288,21 @@ function ProjectionView() {
 
   const reserveDifference = currentProjection.realNow - originalAtToday;
   const selectedBudget = p.budgets.find((item) => item.month === budgetMonth);
-  const selectedTransactions = p.transactions.filter((transaction) => monthKey(transaction.date) === budgetMonth);
-  const selectedTotals = monthlyTotals(p.transactions, budgetMonth);
+  const selectedTransactions = p.transactions.filter((transaction) =>
+    monthKey(transaction.date) === budgetMonth &&
+    !(transaction.type === "recebimento" && transaction.description.startsWith(RECEIVABLE_PREFIX)),
+  );
+  const selectedTotals = {
+    income: sum(selectedTransactions.filter((t) => t.type === "recebimento").map((t) => t.amount)),
+    bonuses: sum(selectedTransactions.filter((t) => t.type === "bonus").map((t) => t.amount)),
+    expenses: sum(selectedTransactions.filter((t) => t.type === "despesa").map((t) => t.amount)),
+    deposits: sum(selectedTransactions.filter((t) => t.type === "aporte").map((t) => t.amount)),
+    withdrawals: sum(selectedTransactions.filter((t) => t.type === "retirada").map((t) => t.amount)),
+  };
   const selectedMonthOverview = overviewData.find((row) => row.month === budgetMonth);
   const selectedInvoices = p.creditCardInvoices.filter((invoice) => invoice.due_date.slice(0, 7) === budgetMonth && invoice.status !== "paid");
   const invoiceOutstanding = sum(selectedInvoices.map((invoice) => Math.max(0, invoice.total_amount - invoice.paid_amount)));
-  const plannedIncome = selectedBudget?.planned_income ?? (budgetMonth > currentMonth ? selectedMonthOverview?.projectedIncome ?? 0 : selectedTotals.income);
+  const plannedIncome = selectedBudget?.planned_income ?? (budgetMonth > currentMonth ? selectedMonthOverview?.projectedIncome ?? 0 : selectedTotals.income + selectedTotals.bonuses);
   const plannedExpenseEntries = Object.entries(selectedBudget?.planned_expenses ?? {});
   const actualExpenseEntries = Object.entries(selectedTransactions.filter((transaction) => transaction.type === "despesa").reduce<Record<string, number>>((acc, transaction) => {
     const category = transaction.category ?? "Outros";
@@ -303,7 +315,11 @@ function ProjectionView() {
   const invoiceAdjustment = Math.max(0, invoiceOutstanding - budgetInvoiceAmount);
   const previousMonth = shiftMonth(budgetMonth, -1);
   const previousBudget = p.budgets.find((item) => item.month === previousMonth);
-  const previousTotals = monthlyTotals(p.transactions, previousMonth);
+  const previousTransactions = p.transactions.filter((t) => monthKey(t.date) === previousMonth && !(t.type === "recebimento" && t.description.startsWith(RECEIVABLE_PREFIX)));
+  const previousTotals = {
+    income: sum(previousTransactions.filter((t) => t.type === "recebimento" || t.type === "bonus").map((t) => t.amount)),
+    expenses: sum(previousTransactions.filter((t) => t.type === "despesa").map((t) => t.amount)),
+  };
   const previousIncome = previousBudget?.planned_income ?? previousTotals.income;
   const previousExpenses = previousBudget
     ? sum(Object.values(previousBudget.planned_expenses))
@@ -435,31 +451,53 @@ function ProjectionView() {
 
       <section className="panel budget-panel projection-budget">
         <div className="chart-title projection-budget-heading">
-          <div><p className="budget-eyebrow">DETALHAMENTO MENSAL</p><h2>Receitas e despesas previstas</h2></div>
+          <div><p className="budget-eyebrow">RELATÓRIO FINANCEIRO</p><h2>Fechamento de cada mês</h2></div>
           <div className="month-selector">
             <Button variant="ghost" size="icon" aria-label="Mês anterior" onClick={() => setBudgetMonth((month) => shiftMonth(month, -1))}>‹</Button>
             <span>{monthName(budgetMonth)}</span>
             <Button variant="ghost" size="icon" aria-label="Próximo mês" onClick={() => setBudgetMonth((month) => shiftMonth(month, 1))}>›</Button>
           </div>
         </div>
-        <div className="projection-month-comparison">
-          <div><span>Receitas vs. mês anterior</span><strong className={incomeChange === null ? "" : incomeChange >= 0 ? "text-income" : "text-destructive"}>{incomeChange === null ? "Sem base de comparação" : `${incomeChange >= 0 ? "↑" : "↓"} ${pct(Math.abs(incomeChange))}`}</strong></div>
-          <div><span>Despesas vs. mês anterior</span><strong className={expenseChange === null ? "" : expenseChange <= 0 ? "text-income" : "text-destructive"}>{expenseChange === null ? "Sem base de comparação" : `${expenseChange >= 0 ? "↑" : "↓"} ${pct(Math.abs(expenseChange))}`}</strong></div>
-        </div>
         {selectedBudget || selectedTransactions.length || selectedInvoices.length || (budgetMonth > currentMonth && !!selectedMonthOverview?.hasData) ? (
           <>
-            <p className="budget-eyebrow">RECEITAS POR ORIGEM</p>
-            {selectedBudget && Object.keys(selectedBudget.planned_income_sources).length ? Object.entries(selectedBudget.planned_income_sources).map(([origin, value]) => <div className="budget-line" key={origin}><span>{origin}</span><strong>{money(value)}</strong></div>) : <p className="subtle-note">Sem detalhamento de receitas por origem neste mês.</p>}
-            <div className="budget-line total"><span>Total de receitas {selectedBudget ? "previstas" : "registradas"}</span><strong>{money(plannedIncome)}</strong></div>
-            <p className="budget-eyebrow">DESPESAS POR CATEGORIA</p>
-            {expenseEntries.length ? expenseEntries.sort((a, b) => b[1] - a[1]).map(([category, value]) => <div className="budget-line" key={category}><span>{category}</span><strong>− {money(value)}</strong></div>) : <p className="subtle-note">Nenhuma despesa detalhada para este mês.</p>}
-            {invoiceAdjustment > 0 && <div className="budget-line"><span>Ajuste de faturas em aberto</span><strong>− {money(invoiceAdjustment)}</strong></div>}
-            <div className="budget-line total"><span>Total de despesas</span><strong>− {money(expenseTotal + invoiceAdjustment)}</strong></div>
-            <div className="budget-line"><span>Aporte mensal do plano</span><strong>− {money(plannedDeposit(budgetMonth, p.settings))}</strong></div>
-            <div className="budget-line total"><span>Sobra estimada após despesas e aporte</span><strong>{money(plannedIncome - expenseTotal - invoiceAdjustment - plannedDeposit(budgetMonth, p.settings))}</strong></div>
+            <div className="projection-report-summary">
+              <div><span>Recebimentos</span><strong className="text-income">{money(selectedTotals.income)}</strong></div>
+              <div><span>Bônus</span><strong className="text-income">{money(selectedTotals.bonuses)}</strong></div>
+              <div><span>Total de entradas</span><strong className="text-income">{money(selectedTotals.income + selectedTotals.bonuses)}</strong></div>
+              <div><span>Despesas</span><strong className="text-destructive">{money(selectedTotals.expenses)}</strong></div>
+              <div><span>Aportes</span><strong>{money(selectedTotals.deposits)}</strong></div>
+              <div><span>Retiradas</span><strong>{money(selectedTotals.withdrawals)}</strong></div>
+              <div><span>Saldo operacional</span><strong className={selectedTotals.income + selectedTotals.bonuses - selectedTotals.expenses >= 0 ? "text-income" : "text-destructive"}>{money(selectedTotals.income + selectedTotals.bonuses - selectedTotals.expenses)}</strong></div>
+              <div><span>Saldo após aportes</span><strong>{money(selectedTotals.income + selectedTotals.bonuses - selectedTotals.expenses - selectedTotals.deposits + selectedTotals.withdrawals)}</strong></div>
+            </div>
+            <div className="projection-report-section">
+              <p className="budget-eyebrow">LANÇAMENTOS DO MÊS</p>
+              {selectedTransactions.length ? (
+                <div className="projection-report-list">
+                  {selectedTransactions.slice().sort((a, b) => b.date.localeCompare(a.date)).map((transaction) => {
+                    const positive = transaction.type === "recebimento" || transaction.type === "bonus" || transaction.type === "retirada";
+                    const label = transaction.type === "recebimento" ? "Recebimento" : transaction.type === "bonus" ? "Bônus" : transaction.type === "despesa" ? "Despesa" : transaction.type === "aporte" ? "Aporte na reserva" : "Retirada da reserva";
+                    return <div className="projection-report-row" key={transaction.id}>
+                      <div><strong>{transaction.description || label}</strong><span>{new Date(`${transaction.date}T12:00:00`).toLocaleDateString("pt-BR")} · {label}{transaction.category ? ` · ${transaction.category}` : ""}</span></div>
+                      <strong className={positive ? "text-income" : transaction.type === "despesa" ? "text-destructive" : ""}>{transaction.type === "despesa" || transaction.type === "aporte" ? "− " : "+ "}{money(transaction.amount)}</strong>
+                    </div>;
+                  })}
+                </div>
+              ) : <p className="subtle-note">Nenhum lançamento real registrado neste mês.</p>}
+            </div>
+            <div className="projection-report-section">
+              <p className="budget-eyebrow">ORÇAMENTO E FATURAS</p>
+              {selectedBudget ? <>
+                <div className="budget-line"><span>Receita prevista no orçamento</span><strong>{money(selectedBudget.planned_income)}</strong></div>
+                {Object.entries(selectedBudget.planned_income_sources).map(([origin, value]) => <div className="budget-line" key={origin}><span>↳ {origin}</span><strong>{money(value)}</strong></div>)}
+                {Object.entries(selectedBudget.planned_expenses).sort((a, b) => b[1] - a[1]).map(([category, value]) => <div className="budget-line" key={category}><span>{category} (previsto)</span><strong>− {money(value)}</strong></div>)}
+              </> : <p className="subtle-note">Não há orçamento cadastrado para este mês.</p>}
+              {selectedInvoices.map((invoice) => <div className="budget-line" key={invoice.id}><span>Fatura em aberto · venc. {new Date(`${invoice.due_date}T12:00:00`).toLocaleDateString("pt-BR")}</span><strong>− {money(Math.max(0, invoice.total_amount - invoice.paid_amount))}</strong></div>)}
+              {invoiceOutstanding > 0 && <div className="budget-line total"><span>Total de faturas em aberto</span><strong>− {money(invoiceOutstanding)}</strong></div>}
+            </div>
+            {budgetMonth > currentMonth && <p className="projection-chart-hint">Este é um mês futuro: os valores são estimativas baseadas no orçamento, nas faturas e, quando não há orçamento, na média dos últimos três meses. Não são lançamentos realizados.</p>}
           </>
-        ) : <div className="projection-empty compact"><strong>Nenhum dado para {monthName(budgetMonth)}.</strong><span>Quando houver lançamentos, orçamento ou fatura, o detalhamento aparecerá aqui.</span></div>}
-        <p className="projection-chart-hint">Mês selecionado no gráfico: {monthName(budgetMonth)}. Valores previstos vêm do orçamento e das faturas; quando não há orçamento futuro, usamos a média dos últimos três meses para receitas e categorias de despesas recorrentes.</p>
+        ) : <div className="projection-empty compact"><strong>Nenhum dado para {monthName(budgetMonth)}.</strong><span>Quando houver lançamentos, orçamento ou fatura, o relatório aparecerá aqui.</span></div>}
       </section>
 
       <section className="panel table-scroll projection-milestones">
