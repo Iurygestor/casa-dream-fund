@@ -20,6 +20,7 @@ import {
   monthlyTotals,
   monthName,
   dateValue,
+  parseDecimal,
 } from "@/lib/finance";
 import { pageHead } from "@/lib/metadata";
 export const Route = createFileRoute("/reserva")({
@@ -200,7 +201,7 @@ function Reserve() {
           <form className="income-edit-form" onSubmit={async (event) => {
             event.preventDefault();
             if (!editing) return;
-            const parsedAmount = Number(amountInput.trim().replace(/\\./g, "").replace(",", "."));
+            const parsedAmount = parseDecimal(amountInput);
             if (!description.trim() || !Number.isFinite(parsedAmount) || parsedAmount <= 0 || !dateInput) return;
             setSaving(true);
             await p.updateTransaction(editing.id, { description: description.trim(), amount: parsedAmount, date: dateInput });
