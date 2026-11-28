@@ -301,30 +301,7 @@ function ProjectionView() {
   const selectedMonthOverview = overviewData.find((row) => row.month === budgetMonth);
   const selectedInvoices = p.creditCardInvoices.filter((invoice) => invoice.due_date.slice(0, 7) === budgetMonth && invoice.status !== "paid");
   const invoiceOutstanding = sum(selectedInvoices.map((invoice) => Math.max(0, invoice.total_amount - invoice.paid_amount)));
-  const plannedIncome = selectedBudget?.planned_income ?? (budgetMonth > currentMonth ? selectedMonthOverview?.projectedIncome ?? 0 : selectedTotals.income + selectedTotals.bonuses);
-  const plannedExpenseEntries = Object.entries(selectedBudget?.planned_expenses ?? {});
-  const actualExpenseEntries = Object.entries(selectedTransactions.filter((transaction) => transaction.type === "despesa").reduce<Record<string, number>>((acc, transaction) => {
-    const category = transaction.category ?? "Outros";
-    acc[category] = (acc[category] ?? 0) + transaction.amount;
-    return acc;
-  }, {}));
-  const expenseEntries = selectedBudget ? plannedExpenseEntries : budgetMonth > currentMonth ? [...forecastRows.recurringExpenses.entries()] : actualExpenseEntries;
-  const expenseTotal = expenseEntries.reduce((total, [, value]) => total + value, 0);
-  const budgetInvoiceAmount = expenseEntries.find(([category]) => category.toLowerCase().includes("fatura"))?.[1] ?? 0;
-  const invoiceAdjustment = Math.max(0, invoiceOutstanding - budgetInvoiceAmount);
-  const previousMonth = shiftMonth(budgetMonth, -1);
-  const previousBudget = p.budgets.find((item) => item.month === previousMonth);
-  const previousTransactions = p.transactions.filter((t) => monthKey(t.date) === previousMonth && !(t.type === "recebimento" && t.description.startsWith(RECEIVABLE_PREFIX)));
-  const previousTotals = {
-    income: sum(previousTransactions.filter((t) => t.type === "recebimento" || t.type === "bonus").map((t) => t.amount)),
-    expenses: sum(previousTransactions.filter((t) => t.type === "despesa").map((t) => t.amount)),
-  };
-  const previousIncome = previousBudget?.planned_income ?? previousTotals.income;
-  const previousExpenses = previousBudget
-    ? sum(Object.values(previousBudget.planned_expenses))
-    : previousTotals.expenses;
-  const incomeChange = previousIncome > 0 ? ((plannedIncome - previousIncome) / previousIncome) * 100 : null;
-  const expenseChange = previousExpenses > 0 ? ((expenseTotal - previousExpenses) / previousExpenses) * 100 : null;
+
 
   const goalMonthsSaved = (() => {
     if (!p.settings.goal || !currentProjection.goalMonth || !baseProjection.goalMonth) return null;
