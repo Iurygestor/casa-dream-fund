@@ -67,6 +67,7 @@ function Index() {
   const [bulkBusy, setBulkBusy] = useState(false);
   const [busyReceivable, setBusyReceivable] = useState<string | null>(null);
   const [deletingPayment, setDeletingPayment] = useState<string | null>(null);
+  const [deletingIncome, setDeletingIncome] = useState<string | null>(null);
   const [editingIncome, setEditingIncome] = useState<(typeof p.transactions)[number] | null>(null);
   const [editIncomeDescription, setEditIncomeDescription] = useState("");
   const [editIncomeAmount, setEditIncomeAmount] = useState("");
@@ -470,7 +471,7 @@ function Index() {
                     <Button variant="ghost" size="icon" title="Editar receita" aria-label="Editar receita" onClick={() => { setEditingIncome(transaction); setEditIncomeDescription(transaction.description); setEditIncomeAmount(String(transaction.amount).replace(".", ",")); setEditIncomeDate(transaction.date); }}>
                       <Pencil size={15} />
                     </Button>
-                    <Button variant="ghost" size="icon" title="Excluir receita" aria-label="Excluir receita" onClick={() => setDeletingPayment(transaction.id)}>
+                    <Button variant="ghost" size="icon" title="Excluir receita" aria-label="Excluir receita" onClick={() => setDeletingIncome(transaction.id)}>
                       <Trash2 size={15} />
                     </Button>
                   </div>
@@ -563,6 +564,20 @@ function Index() {
           onConfirm={async () => {
             if (deletingReceivable) await p.remove(deletingReceivable);
             setDeletingReceivable(null);
+          }}
+        />
+        <Confirm
+          open={!!deletingIncome}
+          onOpenChange={(open) => { if (!open) setDeletingIncome(null); }}
+          title="Excluir receita?"
+          description={(() => {
+            const item = incomeTransactions.find((transaction) => transaction.id === deletingIncome);
+            return item ? `${item.description || "Receita"} • ${money(item.amount)}. Esta entrada será removida do seu histórico.` : "Esta ação não pode ser desfeita.";
+          })()}
+          label="Excluir receita"
+          onConfirm={async () => {
+            if (deletingIncome) await p.remove(deletingIncome);
+            setDeletingIncome(null);
           }}
         />
         <Confirm
