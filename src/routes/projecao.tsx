@@ -23,7 +23,6 @@ import {
   monthName,
   shiftMonth,
   monthEnd,
-  monthlyTotals,
   reserveBalance,
   plannedDeposit,
   dayDifference,
@@ -198,7 +197,7 @@ function ProjectionView() {
   const overviewData = useMemo(() => {
     const rows: OverviewPoint[] = [];
     const monthIndex = (month: string) => Number(month.slice(0, 4)) * 12 + Number(month.slice(5, 7));
-    const periodMonths = period === "Tudo" ? monthIndex(currentMonth) - monthIndex(firstAvailableMonth) + 61 : periodCount;
+    const periodMonths = Math.min(2400, Math.max(1, period === "Tudo" ? monthIndex(currentMonth) - monthIndex(firstAvailableMonth) + 61 : periodCount));
     let accumulatedOutsideReserve = 0;
     let reserve = reserveBalance(p.settings, p.transactions, todayIso) ?? p.settings.initial_balance;
     for (let month = rangeStart, index = 0; index < periodMonths; month = shiftMonth(month, 1), index++) {
@@ -256,7 +255,7 @@ function ProjectionView() {
   }, [period, currentMonth, todayIso, p.transactions, p.budgets, p.creditCardInvoices, p.settings, actualMonthly, forecastRows, firstAvailableMonth, periodCount, rangeStart, rangeEnd, simulatedDeposit]);
 
   const safeOverviewData = useMemo(
-    () => overviewData.map((row) => ({
+    () => overviewData.filter((row) => isMonthKey(row.month)).map((row) => ({
       ...row,
       income: Number.isFinite(row.income) ? row.income : 0,
       expenses: Number.isFinite(row.expenses) ? row.expenses : 0,
