@@ -3672,3 +3672,114 @@ h1 {
     flex: 1;
   }
 }
+
+
+/* Histórico de retiradas da reserva */
+.withdrawal-history {
+  overflow: hidden;
+  padding: 0;
+}
+.withdrawal-history-total {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 17px 21px;
+  background: color-mix(in oklch, var(--expense-soft) 45%, var(--card));
+  border-bottom: 1px solid var(--border);
+}
+.withdrawal-history-total span {
+  color: var(--muted-foreground);
+  font-size: 11px;
+  font-weight: 550;
+}
+.withdrawal-history-total strong {
+  color: var(--expense);
+  font-family: "Bricolage Grotesque", var(--font-sans);
+  font-size: clamp(19px, 2.4vw, 25px);
+  font-variant-numeric: tabular-nums;
+}
+.withdrawal-entry {
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 12px;
+  min-height: 74px;
+  padding: 13px 16px;
+  border-bottom: 1px solid var(--border);
+}
+.withdrawal-entry:last-child { border-bottom: 0; }
+.withdrawal-entry-icon {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  color: var(--expense);
+  background: var(--expense-soft);
+  border-radius: 10px;
+}
+.withdrawal-entry-info {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 5px;
+}
+.withdrawal-entry-info strong {
+  overflow-wrap: anywhere;
+  font-size: 13px;
+  line-height: 1.4;
+}
+.withdrawal-entry-info span {
+  color: var(--muted-foreground);
+  font-size: 10px;
+}
+.withdrawal-entry-value {
+  color: var(--expense);
+  white-space: nowrap;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+.withdrawal-entry-actions {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+.withdrawal-entry-actions button {
+  width: 33px;
+  height: 33px;
+  color: var(--muted-foreground);
+  border-radius: 9px;
+}
+.withdrawal-entry-actions button:hover {
+  color: var(--primary);
+  background: var(--muted);
+}
+.withdrawal-entry-actions button:last-child:hover { color: var(--destructive); }
+.withdrawal-empty {
+  padding: 23px 16px;
+  color: var(--muted-foreground);
+  font-size: 11px;
+  line-height: 1.6;
+  text-align: center;
+}
+@media (max-width: 560px) {
+  .withdrawal-history-total { padding: 15px 14px; }
+  .withdrawal-entry {
+    grid-template-columns: 30px minmax(0, 1fr) auto;
+    gap: 8px;
+    padding: 12px 9px;
+  }
+  .withdrawal-entry-icon { width: 29px; height: 29px; }
+  .withdrawal-entry-info strong { font-size: 12px; }
+  .withdrawal-entry-value {
+    grid-column: 2;
+    justify-self: start;
+    font-size: 12px;
+  }
+  .withdrawal-entry-actions {
+    grid-column: 3;
+    grid-row: 1 / span 2;
+    flex-direction: column;
+  }
+  .withdrawal-entry-actions button { width: 31px; height: 31px; }
+}
