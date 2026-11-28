@@ -275,10 +275,12 @@ export function PlanProvider({ children }: { children: ReactNode }) {
     const account = requireUser();
     if (!account) return;
     try {
-      const parsed = transactionSchema.pick({ date: true, amount: true, description: true }).parse(values);
+      const current = query.data?.transactions.find((transaction) => transaction.id === id);
+      if (!current) throw new Error("Lançamento não encontrado.");
+      const parsed = transactionSchema.parse({ ...current, ...values });
       const { error } = await supabase
         .from("transactions")
-        .update(parsed)
+        .update({ date: parsed.date, amount: parsed.amount, description: parsed.description })
         .eq("user_id", account.id)
         .eq("id", id);
       if (error) throw error;
