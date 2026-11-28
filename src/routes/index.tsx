@@ -491,7 +491,7 @@ function Index() {
           <form className="income-edit-form" onSubmit={async (event) => {
             event.preventDefault();
             if (!editingIncome) return;
-            const amount = Number(editIncomeAmount.trim().replace(/\\./g, "").replace(",", "."));
+            const amount = Number(editIncomeAmount.trim().replace(/\./g, "").replace(",", "."));
             if (!editIncomeDescription.trim() || !Number.isFinite(amount) || amount <= 0 || !editIncomeDate) return;
             setSavingIncome(true);
             try {
