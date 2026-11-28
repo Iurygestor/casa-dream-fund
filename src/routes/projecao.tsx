@@ -387,7 +387,7 @@ function ProjectionView() {
                       </div>
                     );
                   }} />
-                  <ReferenceLine x={currentMonth} stroke="var(--gold)" strokeDasharray="3 3" label={{ value: "Hoje", fill: "var(--gold)", fontSize: 10, position: "insideTopRight" }} />
+                  <ReferenceLine x={currentMonth} yAxisId="money" stroke="var(--gold)" strokeDasharray="3 3" label={{ value: "Hoje", fill: "var(--gold)", fontSize: 10, position: "insideTopRight" }} />
                   {visible.income && <Bar yAxisId="money" dataKey="income" name="Receitas realizadas" fill="var(--income)" radius={[3, 3, 0, 0]} maxBarSize={13} />}
                   {visible.expenses && <Bar yAxisId="money" dataKey="expenses" name="Despesas realizadas" fill="var(--expense)" radius={[3, 3, 0, 0]} maxBarSize={13} />}
                   {visible.income && <Bar yAxisId="money" dataKey="projectedIncome" name="Receitas projetadas" fill="var(--income)" fillOpacity={0.35} stroke="var(--income)" strokeDasharray="3 3" radius={[3, 3, 0, 0]} maxBarSize={13} />}
