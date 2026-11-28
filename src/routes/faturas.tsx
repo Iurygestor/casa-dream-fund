@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
-import { CreditCard, Plus, Pencil, Trash2, X, WalletCards } from "lucide-react";
+import { CreditCard, Plus, Pencil, Trash2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { usePlan, type CreditCard as CreditCardData } from "@/components/plan/provider";
 import { supabase } from "@/integrations/supabase/client";
