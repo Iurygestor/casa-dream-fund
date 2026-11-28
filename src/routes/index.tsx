@@ -59,7 +59,7 @@ function Index() {
   const p = usePlan(),
     search = Route.useSearch(),
     navigate = Route.useNavigate(),
-    month = search.month ?? "2026-12";
+    month = search.month ?? isoDate().slice(0, 7);
   const [billFilter, setBillFilter] = useState<BillFilter>("all");
   const [busyBill, setBusyBill] = useState<string | null>(null);
   const [bulkBusy, setBulkBusy] = useState(false);
@@ -224,7 +224,7 @@ function Index() {
       />
 
       <section className="quick-launch-actions" aria-label="Atalhos de lançamento">
-        <Link to="/lancar" search={{ type: "receita" }} className="quick-launch-card quick-launch-income">
+        <Link to="/lancar" search={{ type: "recebimento" }} className="quick-launch-card quick-launch-income">
           <span className="quick-launch-icon"><TrendingUp size={19} /></span>
           <span><strong>Nova receita</strong><small>Registrar dinheiro que entrou</small></span>
           <ArrowUpRight size={17} className="quick-launch-arrow" />
