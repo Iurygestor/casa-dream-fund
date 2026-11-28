@@ -62,7 +62,7 @@ const sum = (values: number[]) => values.reduce((total, value) => total + value,
 const average = (values: number[]) => values.length ? sum(values) / values.length : 0;
 const pct = (value: number) => `${value > 0 ? "+" : ""}${value.toLocaleString("pt-BR", { maximumFractionDigits: 1 })}%`;
 const isMonthKey = (value: unknown): value is string =>
-  typeof value === "string" && /^\\d{4}-(0[1-9]|1[0-2])$/.test(value);
+  typeof value === "string" && /^\d{4}-(0[1-9]|1[0-2])$/.test(value);
 const finiteOrNull = (value: number | null) =>
   value !== null && Number.isFinite(value) ? value : null;
 
