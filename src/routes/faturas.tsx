@@ -2,7 +2,8 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { CreditCard, Plus, Pencil, Trash2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { usePlan, type CreditCard as CreditCardData } from "@/components/plan/provider";
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
+import { usePlan, type CreditCard as CreditCardData, type CreditCardInvoice } from "@/components/plan/provider";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeading, Empty, CloudNotice, Confirm, SectionHeading } from "@/components/plan/shared";
 import { money, monthName, dateValue, parseDecimal } from "@/lib/finance";
@@ -39,6 +40,15 @@ function InvoicesPage() {
   const [form, setForm] = useState<CardForm>(emptyForm);
   const [saving, setSaving] = useState(false);
   const [deactivating, setDeactivating] = useState<CreditCardData | null>(null);
+  const [editingInvoice, setEditingInvoice] = useState<CreditCardInvoice | null>(null);
+  const [deletingInvoice, setDeletingInvoice] = useState<CreditCardInvoice | null>(null);
+  const [invoiceTotal, setInvoiceTotal] = useState("");
+  const [invoicePaid, setInvoicePaid] = useState("");
+  const [invoiceClosing, setInvoiceClosing] = useState("");
+  const [invoiceDue, setInvoiceDue] = useState("");
+  const [invoiceMonth, setInvoiceMonth] = useState("");
+  const [invoiceStatus, setInvoiceStatus] = useState<"open" | "closed" | "paid">("open");
+  const [savingInvoice, setSavingInvoice] = useState(false);
   const cards = new Map(p.creditCards.map((card) => [card.id, card]));
 
   function openNewCard() {
@@ -108,6 +118,72 @@ function InvoicesPage() {
       toast.error("Não foi possível salvar o cartão. Tente novamente.");
     } finally {
       setSaving(false);
+    }
+  }
+
+  function openEditInvoice(invoice: CreditCardInvoice) {
+    setEditingInvoice(invoice);
+    setInvoiceTotal(String(invoice.total_amount).replace(".", ","));
+    setInvoicePaid(String(invoice.paid_amount).replace(".", ","));
+    setInvoiceClosing(invoice.closing_date);
+    setInvoiceDue(invoice.due_date);
+    setInvoiceMonth(invoice.reference_month.slice(0, 7));
+    setInvoiceStatus(invoice.status);
+  }
+
+  async function saveInvoice(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!p.user || !editingInvoice) return;
+    const total = parseDecimal(invoiceTotal);
+    const paid = parseDecimal(invoicePaid);
+    if (!Number.isFinite(total) || total < 0 || !Number.isFinite(paid) || paid < 0 || paid > total) {
+      toast.error("Confira os valores. O total pago não pode superar o valor da fatura.");
+      return;
+    }
+    if (!invoiceMonth || !invoiceClosing || !invoiceDue) {
+      toast.error("Informe o mês de referência, fechamento e vencimento.");
+      return;
+    }
+    setSavingInvoice(true);
+    try {
+      const { error } = await (supabase.from("credit_card_invoices" as any) as any)
+        .update({
+          reference_month: `${invoiceMonth}-01`,
+          closing_date: invoiceClosing,
+          due_date: invoiceDue,
+          total_amount: total,
+          paid_amount: paid,
+          status: paid >= total && total > 0 ? "paid" : invoiceStatus === "paid" ? "open" : invoiceStatus,
+        })
+        .eq("user_id", p.user.id)
+        .eq("id", editingInvoice.id);
+      if (error) throw error;
+      await p.refetch();
+      setEditingInvoice(null);
+      toast.success("Fatura atualizada.");
+    } catch (error) {
+      console.error("Erro ao atualizar fatura:", error);
+      toast.error("Não foi possível atualizar a fatura. Verifique se existem compras vinculadas.");
+    } finally {
+      setSavingInvoice(false);
+    }
+  }
+
+  async function removeInvoice() {
+    if (!p.user || !deletingInvoice) return;
+    try {
+      const { error } = await (supabase.from("credit_card_invoices" as any) as any)
+        .delete()
+        .eq("user_id", p.user.id)
+        .eq("id", deletingInvoice.id);
+      if (error) throw error;
+      await p.refetch();
+      setDeletingInvoice(null);
+      toast.success("Fatura excluída.");
+    } catch (error) {
+      console.error("Erro ao excluir fatura:", error);
+      toast.error("Não foi possível excluir esta fatura. Ela pode ter compras ou parcelas vinculadas.");
+      throw error;
     }
   }
 
@@ -236,6 +312,10 @@ function InvoicesPage() {
                       <strong>{money(invoice.total_amount)}</strong>
                       {remaining > 0 && <span className="text-muted-foreground text-xs">Restam {money(remaining)}</span>}
                     </div>
+                    <div className="invoice-row-actions">
+                      <Button type="button" variant="ghost" size="icon" onClick={() => openEditInvoice(invoice)} aria-label="Editar fatura"><Pencil size={16} /></Button>
+                      <Button type="button" variant="ghost" size="icon" onClick={() => setDeletingInvoice(invoice)} aria-label="Excluir fatura"><Trash2 size={16} /></Button>
+                    </div>
                   </div>
                 );
               })}
@@ -249,6 +329,32 @@ function InvoicesPage() {
         </div>
       </section>
       <CloudNotice />
+      <Dialog open={!!editingInvoice} onOpenChange={(open) => { if (!open) setEditingInvoice(null); }}>
+        <DialogContent className="invoice-edit-dialog">
+          <DialogTitle>Editar fatura</DialogTitle>
+          <DialogDescription>Altere os valores e as datas desta fatura.</DialogDescription>
+          <form className="form-stack" onSubmit={saveInvoice}>
+            <label>Mês de referência<input type="month" value={invoiceMonth} onChange={(e) => setInvoiceMonth(e.target.value)} required /></label>
+            <label>Valor total<input inputMode="decimal" value={invoiceTotal} onChange={(e) => setInvoiceTotal(e.target.value)} placeholder="0,00" required /></label>
+            <label>Valor já pago<input inputMode="decimal" value={invoicePaid} onChange={(e) => setInvoicePaid(e.target.value)} placeholder="0,00" required /></label>
+            <label>Data de fechamento<input type="date" value={invoiceClosing} onChange={(e) => setInvoiceClosing(e.target.value)} required /></label>
+            <label>Data de vencimento<input type="date" value={invoiceDue} onChange={(e) => setInvoiceDue(e.target.value)} required /></label>
+            <label>Status<select value={invoiceStatus} onChange={(e) => setInvoiceStatus(e.target.value as "open" | "closed" | "paid")}><option value="open">Em aberto</option><option value="closed">Fechada</option><option value="paid">Paga</option></select></label>
+            <div className="card-form-actions">
+              <Button type="button" variant="outline" onClick={() => setEditingInvoice(null)}>Cancelar</Button>
+              <Button type="submit" disabled={savingInvoice}>{savingInvoice ? "Salvando..." : "Salvar fatura"}</Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+      <Confirm
+        open={!!deletingInvoice}
+        onOpenChange={(open) => { if (!open) setDeletingInvoice(null); }}
+        title="Excluir fatura?"
+        description="Esta ação remove o registro da fatura. Se houver compras ou parcelas vinculadas, o banco poderá impedir a exclusão para preservar o histórico."
+        onConfirm={removeInvoice}
+        label="Excluir fatura"
+      />
       <Confirm
         open={!!deactivating}
         onOpenChange={(open) => { if (!open) setDeactivating(null); }}
