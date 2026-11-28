@@ -3440,3 +3440,83 @@ h1 {
     padding-right: 5px;
   }
 }
+
+
+/* Destaque de entradas pendentes no resumo mensal */
+.month-receivable-card {
+  margin: 17px 0 27px;
+  min-height: 0;
+  padding: 23px 27px;
+  color: var(--foreground);
+  background: linear-gradient(115deg, color-mix(in oklch, var(--income-soft) 88%, var(--card)), var(--card));
+  border: 1px solid color-mix(in oklch, var(--income) 24%, var(--border));
+  box-shadow: var(--shadow-card);
+}
+.month-receivable-card .balance-top {
+  color: var(--muted-foreground);
+}
+.month-receivable-card .balance-symbol {
+  color: var(--income);
+  border-color: color-mix(in oklch, var(--income) 25%, var(--border));
+  background: color-mix(in oklch, var(--income-soft) 70%, transparent);
+}
+.month-receivable-card .balance-value {
+  margin: 7px 0 16px;
+  color: var(--income);
+  font-family: "Bricolage Grotesque", var(--font-sans);
+  font-size: clamp(34px, 3.5vw, 43px);
+  letter-spacing: -1.2px;
+}
+.month-receivable-card .balance-value small {
+  font-size: 21px;
+}
+.month-receivable-stats {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px 28px;
+  padding-top: 14px;
+  border-top: 1px solid color-mix(in oklch, var(--income) 18%, var(--border));
+}
+.month-receivable-stats > div {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.month-receivable-stats strong {
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+.month-receivable-stats span {
+  color: var(--muted-foreground);
+  font-size: 10px;
+}
+.month-receivable-stats a {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-left: auto;
+  color: var(--income);
+  font-size: 11px;
+  font-weight: 650;
+  text-decoration: none;
+}
+.month-receivable-stats a:hover {
+  text-decoration: underline;
+}
+@media (max-width: 560px) {
+  .month-receivable-card {
+    margin: 14px 0 22px;
+    padding: 20px 18px;
+  }
+  .month-receivable-card .balance-value {
+    font-size: clamp(32px, 9vw, 39px);
+  }
+  .month-receivable-stats {
+    gap: 12px 18px;
+  }
+  .month-receivable-stats a {
+    width: 100%;
+    margin: 2px 0 0;
+  }
+}
