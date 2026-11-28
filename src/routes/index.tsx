@@ -286,6 +286,22 @@ function Index() {
         </section>
       </div>
 
+      <section className="balance-card month-receivable-card" aria-label="Resumo de contas a receber">
+        <div className="balance-top">
+          <span>A receber neste mês</span>
+          <span className="balance-symbol"><TrendingUp size={18} /></span>
+        </div>
+        <div className="balance-value">
+          <small>R$</small>
+          {receivableTotal.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+        </div>
+        <div className="month-receivable-stats">
+          <div><strong>{receivables.length}</strong><span>{receivables.length === 1 ? "Conta pendente" : "Contas pendentes"}</span></div>
+          <div><strong>{money(incomeTotal)}</strong><span>Já recebido no mês</span></div>
+          <Link to="/lancar" search={{ type: "recebimento", receivable: true }}>Adicionar a receber <ArrowUpRight size={14} /></Link>
+        </div>
+      </section>
+
       <section className="bills-section">
         <SectionHeading
           title="Contas do mês"
