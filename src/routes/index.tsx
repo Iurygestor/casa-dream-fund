@@ -91,6 +91,16 @@ function Index() {
       transaction.date.startsWith(month),
   );
   const receivableTotal = receivables.reduce((sum, transaction) => sum + transaction.amount, 0);
+  const incomeTransactions = p.transactions
+    .filter(
+      (transaction) =>
+        (transaction.type === "recebimento" || transaction.type === "bonus") &&
+        !transaction.description.startsWith(RECEIVABLE_PREFIX) &&
+        transaction.date.startsWith(month) &&
+        !transaction.description.startsWith("Baixa de conta: "),
+    )
+    .sort((a, b) => b.date.localeCompare(a.date));
+  const incomeTotal = incomeTransactions.reduce((sum, transaction) => sum + transaction.amount, 0);
   const paymentTransactions = p.transactions.filter(
     (transaction) =>
       transaction.type === "despesa" &&
@@ -417,7 +427,33 @@ function Index() {
       </div>
 
       <section className="transactions-section month-payments-section">
-        <SectionHeading title="Lançamentos do mês" aside={<span>SAÍDAS CONFIRMADAS</span>} />
+        <SectionHeading title="Receitas do mês" aside={<span>ENTRADAS CONFIRMADAS</span>} />
+        <div className="panel income-panel">
+          <div className="income-panel-total">
+            <span>Total recebido</span>
+            <strong>{money(incomeTotal)}</strong>
+          </div>
+          {incomeTransactions.length ? (
+            <div className="transaction-list">
+              {incomeTransactions.map((transaction) => (
+                <div className="transaction-row month-payment-row" key={transaction.id}>
+                  <span className="transaction-icon tone-recebimento"><TrendingUp size={17} /></span>
+                  <div className="transaction-info">
+                    <strong>{transaction.description || (transaction.type === "bonus" ? "Bônus" : "Recebimento")}</strong>
+                    <span>{transaction.type === "bonus" ? "Bônus" : "Recebido"} em {dateValue(transaction.date).toLocaleDateString("pt-BR")}</span>
+                  </div>
+                  <strong className="transaction-value">+ {money(transaction.amount)}</strong>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="no-payments-empty">Ainda não há receitas registradas neste mês.</div>
+          )}
+        </div>
+      </section>
+
+      <section className="transactions-section month-payments-section">
+        <SectionHeading title="Despesas do mês" aside={<span>SAÍDAS CONFIRMADAS</span>} />
         {paymentTransactions.length ? (
           <div className="transaction-list">
             {paymentTransactions.map((transaction) => (
