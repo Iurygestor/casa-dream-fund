@@ -301,6 +301,15 @@ function ProjectionView() {
   const selectedMonthOverview = overviewData.find((row) => row.month === budgetMonth);
   const selectedInvoices = p.creditCardInvoices.filter((invoice) => invoice.due_date.slice(0, 7) === budgetMonth && invoice.status !== "paid");
   const invoiceOutstanding = sum(selectedInvoices.map((invoice) => Math.max(0, invoice.total_amount - invoice.paid_amount)));
+  const isFutureReport = budgetMonth > currentMonth;
+  const reportIncome = isFutureReport ? selectedBudget?.planned_income ?? selectedMonthOverview?.projectedIncome ?? 0 : selectedTotals.income + selectedTotals.bonuses;
+  const reportExpenses = isFutureReport
+    ? selectedBudget
+      ? sum(Object.values(selectedBudget.planned_expenses))
+      : selectedMonthOverview?.projectedExpenses ?? 0
+    : selectedTotals.expenses;
+  const reportDeposits = isFutureReport ? plannedDeposit(budgetMonth, p.settings) : selectedTotals.deposits;
+  const reportWithdrawals = isFutureReport ? 0 : selectedTotals.withdrawals;
 
 
   const goalMonthsSaved = (() => {
@@ -313,7 +322,7 @@ function ProjectionView() {
     : "Defina uma meta para comparar";
 
   const toggleSeries = (key: keyof typeof visible) => setVisible((current) => ({ ...current, [key]: !current[key] }));
-  const selectMonth = (month: string) => setBudgetMonth(month);
+  const selectMonth = (month: string) => { if (isMonthKey(month)) setBudgetMonth(month); };
 
   return (
     <>
@@ -348,7 +357,7 @@ function ProjectionView() {
                   <CartesianGrid vertical={false} stroke="var(--border)" strokeDasharray="3 5" />
                   <XAxis dataKey="month" minTickGap={28} tickFormatter={(month) => monthName(String(month), true).replace(".", "")} tick={{ fill: "var(--muted-foreground)", fontSize: 10 }} axisLine={false} tickLine={false} />
                   <YAxis tickFormatter={compactMoney} tick={{ fill: "var(--muted-foreground)", fontSize: 10 }} axisLine={false} tickLine={false} width={66} />
-                  <Tooltip content={({ active, payload, label }) => active && payload?.length ? <div className="chart-tooltip"><p>{monthName(String(label), true)}</p>{payload.filter((item) => item.value !== null).map((item) => <div key={String(item.dataKey)}>{item.name}<strong>{money(Number(item.value))}</strong></div>)}</div> : null} />
+                  <Tooltip content={({ active, payload, label }) => active && payload?.length && isMonthKey(label) ? <div className="chart-tooltip"><p>{monthName(label, true)}</p>{payload.filter((item) => item.value !== null && Number.isFinite(Number(item.value))).map((item) => <div key={String(item.dataKey)}>{item.name}<strong>{money(Number(item.value))}</strong></div>)}</div> : null} />
                   <ReferenceLine x={currentMonth} stroke="var(--gold)" strokeDasharray="3 3" label={{ value: "Hoje", fill: "var(--gold)", fontSize: 10, position: "insideTopRight" }} />
                   <Line type="monotone" dataKey="plan" name="Plano original" stroke="var(--muted-foreground)" strokeDasharray="3 7" strokeWidth={1.5} dot={false} connectNulls />
                   <Line type="monotone" dataKey="realized" name="Realizado" stroke="var(--primary)" strokeWidth={3} dot={false} connectNulls={false} />
@@ -358,7 +367,7 @@ function ProjectionView() {
               </ResponsiveContainer>
             ) : safeOverviewData.some((row) => row.hasData) ? (
               <ResponsiveContainer width="100%" height="100%">
-                <ComposedChart data={safeOverviewData} margin={{ top: 12, right: 12, bottom: 8, left: 0 }} onClick={(state: any) => { const month = state?.activeLabel; if (typeof month === "string") selectMonth(month); }}>
+                <ComposedChart data={safeOverviewData} margin={{ top: 12, right: 12, bottom: 8, left: 0 }} onClick={(state: any) => { const month = state?.activeLabel; if (isMonthKey(month)) selectMonth(month); }}>
                   <CartesianGrid vertical={false} stroke="var(--border)" strokeDasharray="3 5" />
                   <XAxis dataKey="month" minTickGap={26} tickFormatter={(month) => monthName(String(month), true).replace(".", "")} tick={{ fill: "var(--muted-foreground)", fontSize: 10 }} axisLine={false} tickLine={false} />
                   <YAxis yAxisId="money" tickFormatter={compactMoney} tick={{ fill: "var(--muted-foreground)", fontSize: 9 }} axisLine={false} tickLine={false} width={64} />
@@ -439,12 +448,12 @@ function ProjectionView() {
             <div className="projection-report-summary">
               <div><span>Recebimentos</span><strong className="text-income">{money(selectedTotals.income)}</strong></div>
               <div><span>Bônus</span><strong className="text-income">{money(selectedTotals.bonuses)}</strong></div>
-              <div><span>Total de entradas</span><strong className="text-income">{money(selectedTotals.income + selectedTotals.bonuses)}</strong></div>
-              <div><span>Despesas</span><strong className="text-destructive">{money(selectedTotals.expenses)}</strong></div>
-              <div><span>Aportes</span><strong>{money(selectedTotals.deposits)}</strong></div>
-              <div><span>Retiradas</span><strong>{money(selectedTotals.withdrawals)}</strong></div>
-              <div><span>Saldo operacional</span><strong className={selectedTotals.income + selectedTotals.bonuses - selectedTotals.expenses >= 0 ? "text-income" : "text-destructive"}>{money(selectedTotals.income + selectedTotals.bonuses - selectedTotals.expenses)}</strong></div>
-              <div><span>Saldo após aportes</span><strong>{money(selectedTotals.income + selectedTotals.bonuses - selectedTotals.expenses - selectedTotals.deposits + selectedTotals.withdrawals)}</strong></div>
+              <div><span>Total de entradas {isFutureReport ? "estimadas" : ""}</span><strong className="text-income">{money(reportIncome)}</strong></div>
+              <div><span>Despesas {isFutureReport ? "estimadas" : ""}</span><strong className="text-destructive">{money(reportExpenses)}</strong></div>
+              <div><span>Aportes {isFutureReport ? "previstos" : ""}</span><strong>{money(reportDeposits)}</strong></div>
+              <div><span>Retiradas</span><strong>{money(reportWithdrawals)}</strong></div>
+              <div><span>Saldo operacional</span><strong className={reportIncome - reportExpenses >= 0 ? "text-income" : "text-destructive"}>{money(reportIncome - reportExpenses)}</strong></div>
+              <div><span>Saldo após aportes</span><strong>{money(reportIncome - reportExpenses - reportDeposits + reportWithdrawals)}</strong></div>
             </div>
             <div className="projection-report-section">
               <p className="budget-eyebrow">LANÇAMENTOS DO MÊS</p>
