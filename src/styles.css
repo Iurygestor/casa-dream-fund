@@ -3981,3 +3981,54 @@ h1 {
     width: 100%;
   }
 }
+
+
+.invoice-row-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin-left: 8px;
+}
+.invoice-row-actions button {
+  width: 34px;
+  height: 34px;
+  color: var(--muted-foreground);
+}
+.invoice-row-actions button:hover {
+  color: var(--primary);
+  background: var(--secondary);
+}
+.invoice-row-actions button:last-child:hover {
+  color: var(--destructive);
+  background: var(--expense-soft);
+}
+.invoice-edit-dialog .form-stack {
+  gap: 13px;
+  margin-top: 12px;
+}
+.invoice-edit-dialog input,
+.invoice-edit-dialog select {
+  width: 100%;
+  min-width: 0;
+  height: 43px;
+  padding: 0 11px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--background);
+  color: var(--foreground);
+}
+.invoice-edit-dialog input:focus,
+.invoice-edit-dialog select:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--secondary);
+}
+@media (max-width: 520px) {
+  .invoice-row-actions {
+    margin-left: 0;
+  }
+  .invoice-row-actions button {
+    width: 30px;
+    height: 30px;
+  }
+}
