@@ -3783,3 +3783,201 @@ h1 {
   }
   .withdrawal-entry-actions button { width: 31px; height: 31px; }
 }
+
+
+/* Credit card registration and management */
+.cards-management-section {
+  margin-top: 4px;
+}
+.cards-management-section > .section-heading {
+  margin-bottom: 15px;
+}
+.card-form-panel {
+  padding: 22px;
+  margin-bottom: 18px;
+}
+.card-form-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.card-form-heading strong {
+  font-size: 15px;
+  font-weight: 600;
+}
+.card-form-heading p,
+.card-form-hint {
+  color: var(--muted-foreground);
+  font-size: 11px;
+  margin-top: 5px;
+}
+.card-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 15px;
+}
+.card-form-grid label {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  min-width: 0;
+}
+.card-form-grid label > span {
+  color: var(--muted-foreground);
+  font-weight: 400;
+  display: inline;
+}
+.card-form-grid input {
+  width: 100%;
+  min-width: 0;
+  height: 44px;
+  padding: 0 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--background);
+  color: var(--foreground);
+  outline: none;
+}
+.card-form-grid input:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--secondary);
+}
+.card-limit-input {
+  display: flex;
+  align-items: center;
+  height: 44px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--background);
+  padding-left: 12px;
+  color: var(--muted-foreground);
+  gap: 8px;
+}
+.card-limit-input input {
+  border: 0;
+  height: 40px;
+  background: transparent;
+  padding-left: 0;
+  box-shadow: none !important;
+}
+.card-form-hint {
+  line-height: 1.5;
+  margin-top: 14px;
+}
+.card-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 9px;
+  margin-top: 18px;
+}
+.registered-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 15px;
+}
+.registered-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: var(--shadow-card);
+  min-width: 0;
+}
+.registered-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 18px;
+}
+.registered-card-icon {
+  display: grid;
+  place-items: center;
+  width: 39px;
+  height: 39px;
+  border-radius: 12px;
+  background: var(--secondary);
+  color: var(--primary);
+}
+.registered-card-actions {
+  display: flex;
+  gap: 2px;
+}
+.registered-card-actions button {
+  width: 34px;
+  height: 34px;
+  color: var(--muted-foreground);
+}
+.registered-card-actions button:hover {
+  color: var(--primary);
+  background: var(--secondary);
+}
+.registered-card-actions button:last-child:hover {
+  color: var(--destructive);
+  background: var(--expense-soft);
+}
+.registered-card-name {
+  display: block;
+  font-size: 16px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.registered-card-bank {
+  display: block;
+  font-size: 11px;
+  color: var(--muted-foreground);
+  margin-top: 4px;
+}
+.registered-card-limit {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 17px;
+  font-size: 11px;
+  color: var(--muted-foreground);
+}
+.registered-card-limit strong {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--foreground);
+  font-variant-numeric: tabular-nums;
+}
+.registered-card-dates {
+  display: flex;
+  gap: 18px;
+  border-top: 1px solid var(--border);
+  padding-top: 14px;
+  margin-top: 17px;
+  color: var(--muted-foreground);
+  font-size: 11px;
+}
+.registered-card-dates b {
+  color: var(--foreground);
+  font-weight: 600;
+}
+.card-invoice-list {
+  border: 0;
+  border-radius: 0;
+}
+@media (max-width: 640px) {
+  .card-form-panel {
+    padding: 17px;
+  }
+  .card-form-grid,
+  .registered-cards-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .registered-card {
+    padding: 17px;
+  }
+  .card-form-actions {
+    flex-direction: column-reverse;
+  }
+  .card-form-actions button {
+    width: 100%;
+  }
+}
