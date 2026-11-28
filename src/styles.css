@@ -3520,3 +3520,155 @@ h1 {
     margin: 2px 0 0;
   }
 }
+
+
+/* Receitas confirmadas: painel e ações por lançamento */
+.income-panel {
+  overflow: hidden;
+  padding: 0;
+}
+.income-panel-total {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 17px 21px;
+  background: color-mix(in oklch, var(--income-soft) 48%, var(--card));
+  border-bottom: 1px solid var(--border);
+}
+.income-panel-total span {
+  color: var(--muted-foreground);
+  font-size: 11px;
+  font-weight: 550;
+}
+.income-panel-total strong {
+  color: var(--income);
+  font-family: "Bricolage Grotesque", var(--font-sans);
+  font-size: clamp(19px, 2.4vw, 25px);
+  font-variant-numeric: tabular-nums;
+}
+.income-panel .transaction-list {
+  padding: 0 8px;
+}
+.income-entry-row {
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 13px;
+  min-height: 76px;
+  padding: 13px 12px;
+  border-bottom: 1px solid var(--border);
+}
+.income-entry-row:last-child {
+  border-bottom: 0;
+}
+.income-entry-row .transaction-info {
+  min-width: 0;
+  gap: 5px;
+}
+.income-entry-row .transaction-info strong {
+  overflow-wrap: anywhere;
+  line-height: 1.4;
+  font-size: 13px;
+}
+.income-entry-row .transaction-info span {
+  color: var(--muted-foreground);
+  font-size: 10px;
+  line-height: 1.5;
+}
+.income-entry-value {
+  color: var(--income);
+  white-space: nowrap;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+.income-entry-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.income-entry-actions button {
+  width: 33px;
+  height: 33px;
+  flex: 0 0 33px;
+  color: var(--muted-foreground);
+  border-radius: 9px;
+}
+.income-entry-actions button:hover {
+  color: var(--primary);
+  background: var(--muted);
+}
+.income-entry-actions button:last-child:hover {
+  color: var(--destructive);
+}
+.income-edit-dialog {
+  width: min(100% - 28px, 460px);
+}
+.income-edit-form {
+  display: grid;
+  gap: 15px;
+  margin-top: 8px;
+}
+.income-edit-form label {
+  display: grid;
+  gap: 7px;
+  color: var(--foreground);
+  font-size: 12px;
+  font-weight: 600;
+}
+.income-edit-form input {
+  width: 100%;
+  min-width: 0;
+}
+.income-edit-fields {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 12px;
+}
+.income-edit-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 9px;
+  padding-top: 5px;
+}
+@media (max-width: 560px) {
+  .income-panel-total {
+    padding: 15px 14px;
+  }
+  .income-panel .transaction-list {
+    padding-inline: 4px;
+  }
+  .income-entry-row {
+    grid-template-columns: 31px minmax(0, 1fr) auto;
+    gap: 9px;
+    padding: 13px 7px;
+  }
+  .income-entry-row .transaction-icon {
+    width: 29px;
+    height: 29px;
+  }
+  .income-entry-row .transaction-info strong {
+    font-size: 12px;
+  }
+  .income-entry-value {
+    grid-column: 2;
+    justify-self: start;
+    font-size: 12px;
+  }
+  .income-entry-actions {
+    grid-column: 3;
+    grid-row: 1 / span 2;
+    flex-direction: column;
+  }
+  .income-entry-actions button {
+    width: 31px;
+    height: 31px;
+    flex-basis: 31px;
+  }
+  .income-edit-fields {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .income-edit-actions button {
+    flex: 1;
+  }
+}
