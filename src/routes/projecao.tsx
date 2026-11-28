@@ -27,7 +27,6 @@ import {
   reserveBalance,
   plannedDeposit,
   dayDifference,
-  type Transaction,
 } from "@/lib/finance";
 import { pageHead } from "@/lib/metadata";
 
@@ -62,6 +61,10 @@ const monthKey = (date: string) => date.slice(0, 7);
 const sum = (values: number[]) => values.reduce((total, value) => total + value, 0);
 const average = (values: number[]) => values.length ? sum(values) / values.length : 0;
 const pct = (value: number) => `${value > 0 ? "+" : ""}${value.toLocaleString("pt-BR", { maximumFractionDigits: 1 })}%`;
+const isMonthKey = (value: unknown): value is string =>
+  typeof value === "string" && /^\\d{4}-(0[1-9]|1[0-2])$/.test(value);
+const finiteOrNull = (value: number | null) =>
+  value !== null && Number.isFinite(value) ? value : null;
 
 function Projection() {
   const p = usePlan();
@@ -249,6 +252,21 @@ function ProjectionView() {
     return rows.filter((row) => row.month >= rangeStart && row.month <= rangeEnd);
   }, [period, currentMonth, todayIso, p.transactions, p.budgets, p.creditCardInvoices, p.settings, actualMonthly, forecastRows, firstAvailableMonth, periodCount, rangeStart, rangeEnd, simulatedDeposit]);
 
+  const safeOverviewData = useMemo(
+    () => overviewData.map((row) => ({
+      ...row,
+      income: Number.isFinite(row.income) ? row.income : 0,
+      expenses: Number.isFinite(row.expenses) ? row.expenses : 0,
+      balance: Number.isFinite(row.balance) ? row.balance : 0,
+      wealth: Number.isFinite(row.wealth) ? row.wealth : 0,
+      projectedIncome: finiteOrNull(row.projectedIncome),
+      projectedExpenses: finiteOrNull(row.projectedExpenses),
+      projectedBalance: finiteOrNull(row.projectedBalance),
+      projectedWealth: finiteOrNull(row.projectedWealth),
+    })),
+    [overviewData],
+  );
+
   const reserveChartData = useMemo(() => {
     const historical: Array<{ month: string; plan: number | null; realized: number | null; future: number | null }> = [];
     for (let month = rangeStart; month <= currentMonth; month = shiftMonth(month, 1)) {
@@ -346,19 +364,27 @@ function ProjectionView() {
                   {p.settings.goal !== null && <ReferenceLine y={Math.max(0, p.settings.goal - p.settings.fgts)} stroke="var(--gold)" strokeDasharray="5 4" label={{ value: "Meta (entrada)", fill: "var(--gold)", fontSize: 10, position: "insideTopLeft" }} />}
                 </LineChart>
               </ResponsiveContainer>
-            ) : overviewData.some((row) => row.hasData) ? (
+            ) : safeOverviewData.some((row) => row.hasData) ? (
               <ResponsiveContainer width="100%" height="100%">
-                <ComposedChart data={overviewData} margin={{ top: 12, right: 12, bottom: 8, left: 0 }} onClick={(state: any) => { const month = state?.activeLabel; if (typeof month === "string") selectMonth(month); }}>
+                <ComposedChart data={safeOverviewData} margin={{ top: 12, right: 12, bottom: 8, left: 0 }} onClick={(state: any) => { const month = state?.activeLabel; if (typeof month === "string") selectMonth(month); }}>
                   <CartesianGrid vertical={false} stroke="var(--border)" strokeDasharray="3 5" />
                   <XAxis dataKey="month" minTickGap={26} tickFormatter={(month) => monthName(String(month), true).replace(".", "")} tick={{ fill: "var(--muted-foreground)", fontSize: 10 }} axisLine={false} tickLine={false} />
                   <YAxis yAxisId="money" tickFormatter={compactMoney} tick={{ fill: "var(--muted-foreground)", fontSize: 9 }} axisLine={false} tickLine={false} width={64} />
                   <YAxis yAxisId="wealth" orientation="right" tickFormatter={compactMoney} tick={{ fill: "var(--muted-foreground)", fontSize: 9 }} axisLine={false} tickLine={false} width={55} />
                   <Tooltip content={({ active, payload, label }) => {
-                    if (!active || !payload?.length) return null;
-                    const row = overviewData.find((item) => item.month === label);
+                    if (!active || !payload?.length || !isMonthKey(label)) return null;
+                    const row = safeOverviewData.find((item) => item.month === label);
                     if (!row) return null;
                     const future = row.isFuture;
-                    return <div className="chart-tooltip"><p>{monthName(String(label), true)} {future ? "· estimativa" : "· realizado"}</p><div>Receitas<strong>{money(future ? row.projectedIncome ?? 0 : row.income)}</strong></div><div>Despesas<strong>{money(future ? row.projectedExpenses ?? 0 : row.expenses)}</strong></div><div>Saldo do mês<strong>{money(future ? row.projectedBalance ?? 0 : row.balance)}</strong></div><div>Patrimônio acumulado<strong>{money(future ? row.projectedWealth ?? 0 : row.wealth)}</strong></div></div>;
+                    return (
+                      <div className="chart-tooltip">
+                        <p>{monthName(label, true)} {future ? "· estimativa" : "· realizado"}</p>
+                        <div>Receitas<strong>{money(future ? row.projectedIncome ?? 0 : row.income)}</strong></div>
+                        <div>Despesas<strong>{money(future ? row.projectedExpenses ?? 0 : row.expenses)}</strong></div>
+                        <div>Saldo do mês<strong>{money(future ? row.projectedBalance ?? 0 : row.balance)}</strong></div>
+                        <div>Patrimônio acumulado<strong>{money(future ? row.projectedWealth ?? 0 : row.wealth)}</strong></div>
+                      </div>
+                    );
                   }} />
                   <ReferenceLine x={currentMonth} stroke="var(--gold)" strokeDasharray="3 3" label={{ value: "Hoje", fill: "var(--gold)", fontSize: 10, position: "insideTopRight" }} />
                   {visible.income && <Bar yAxisId="money" dataKey="income" name="Receitas realizadas" fill="var(--income)" radius={[3, 3, 0, 0]} maxBarSize={13} />}
