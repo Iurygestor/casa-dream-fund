@@ -63,6 +63,7 @@ type PlanContext = {
     payment?: { method: "credit_card"; cardId: string; installments: number },
   ) => Promise<boolean>;
   remove: (id: string) => Promise<void>;
+  updateTransaction: (id: string, values: Pick<Transaction, "date" | "amount" | "description">) => Promise<void>;
   removeBudgetCategory: (month: string, category: string) => Promise<void>;
   clear: () => Promise<void>;
   saveSettings: (s: Settings, name: string) => Promise<boolean>;
@@ -270,6 +271,24 @@ export function PlanProvider({ children }: { children: ReactNode }) {
     await invalidate();
     toast.success("Lançamento excluído");
   };
+  const updateTransaction = async (id: string, values: Pick<Transaction, "date" | "amount" | "description">) => {
+    const account = requireUser();
+    if (!account) return;
+    try {
+      const parsed = transactionSchema.pick({ date: true, amount: true, description: true }).parse(values);
+      const { error } = await supabase
+        .from("transactions")
+        .update(parsed)
+        .eq("user_id", account.id)
+        .eq("id", id);
+      if (error) throw error;
+      await invalidate();
+      toast.success("Receita atualizada");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Não foi possível atualizar a receita.");
+      throw error;
+    }
+  };
   const removeBudgetCategory = async (month: string, category: string) => {
     const account = requireUser();
     if (!account) return;
@@ -412,6 +431,7 @@ export function PlanProvider({ children }: { children: ReactNode }) {
         },
         add,
         remove,
+        updateTransaction,
         removeBudgetCategory,
         clear,
         saveSettings,
